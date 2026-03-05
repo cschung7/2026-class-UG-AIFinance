@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graph: Introduction</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2234;
+    --accent: #3b6fd4;
+    --accent2: #e07b39;
+    --accent3: #4ecca3;
+    --text: #e8edf5;
+    --text-dim: #8899b0;
+    --border: #1e2d45;
+    --node: #3b6fd4;
+    --edge: rgba(59,111,212,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* Canvas background */
+  #bg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0.15;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Slide container */
+  .deck {
+    position: relative;
+    z-index: 1;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .slide {
+    display: none;
+    width: 960px;
+    max-width: 96vw;
+    animation: fadeSlide 0.45s cubic-bezier(0.22,1,0.36,1);
+  }
+  .slide.active { display: flex; flex-direction: column; }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Slide number badge */
+  .slide-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+
+  /* Section label */
+  .section-tag {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-bottom: 14px;
+  }
+  .section-tag.orange { background: var(--accent2); }
+  .section-tag.teal   { background: var(--accent3); color: #0a0e17; }
+
+  /* Title slide */
+  .slide-title-main {
+    min-height: 70vh;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .slide-title-main h1 {
+    font-size: clamp(52px, 8vw, 90px);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -3px;
+    color: var(--text);
+  }
+  .slide-title-main h1 span { color: var(--accent); }
+  .slide-title-main .subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    margin-top: 24px;
+  }
+
+  /* Two-column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 28px;
+  }
+  .card.accent-left { border-left: 3px solid var(--accent); }
+  .card.accent-left-orange { border-left: 3px solid var(--accent2); }
+  .card.accent-left-teal { border-left: 3px solid var(--accent3); }
+
+  /* Headings */
+  h2 {
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 28px;
+    color: var(--text);
+  }
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+  h3.orange { color: var(--accent2); }
+  h3.teal   { color: var(--accent3); }
+
+  /* Lists */
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  ul li {
+    padding: 6px 0 6px 18px;
+    position: relative;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  ul li:last-child { border-bottom: none; }
+  ul li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  ul li strong { color: var(--text); font-weight: 600; }
+  ul li.orange-bullet::before { color: var(--accent2); }
+  ul li.teal-bullet::before   { color: var(--accent3); }
+
+  /* Big stat */
+  .big-stat {
+    font-size: clamp(48px, 8vw, 80px);
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .big-stat.orange { color: var(--accent2); }
+
+  /* Quote block */
+  .quote-block {
+    border-left: 3px solid var(--accent2);
+    padding: 14px 20px;
+    background: var(--surface2);
+    border-radius: 0 6px 6px 0;
+    margin: 10px 0;
+  }
+  .quote-block p {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    font-style: italic;
+  }
+  .quote-block .source {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+    margin-top: 8px;
+    font-style: normal;
+    letter-spacing: 1px;
+  }
+
+  /* Table */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .data-table th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    line-height: 1.45;
+  }
+  .data-table td:first-child {
+    color: var(--text);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: var(--surface2); }
+
+  /* Graph visual */
+  .graph-svg {
+    width: 100%;
+    opacity: 0.9;
+  }
+
+  /* Pill tags */
+  .pill {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 4px 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+  .pill.accent { background: rgba(59,111,212,0.15); border-color: var(--accent); color: var(--accent); }
+  .pill.orange  { background: rgba(224,123,57,0.15); border-color: var(--accent2); color: var(--accent2); }
+  .pill.teal    { background: rgba(78,204,163,0.12); border-color: var(--accent3); color: var(--accent3); }
+
+  /* TOC */
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .toc-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .toc-label { font-size: 16px; color: var(--text); }
+  .toc-sub   { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Nav */
+  nav {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 100;
+    background: rgba(10,14,23,0.85);
+    border: 1px solid var(--border);
+    padding: 10px 18px;
+    border-radius: 40px;
+    backdrop-filter: blur(12px);
+  }
+  nav button {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  nav button:hover { color: var(--text); background: var(--surface2); }
+  nav button:disabled { opacity: 0.3; cursor: default; }
+  .nav-counter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    min-width: 54px;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--accent);
+    transition: width 0.35s ease;
+    z-index: 200;
+  }
+
+  /* Utility */
+  .mt-sm { margin-top: 10px; }
+  .mt    { margin-top: 20px; }
+  .mt-lg { margin-top: 32px; }
+  .text-dim { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  /* Divider line */
+  hr.rule {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  /* Section divider slide */
+  .section-divider {
+    min-height: 70vh;
+    justify-content: center;
+  }
+  .section-divider .section-number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 100px;
+    font-weight: 700;
+    color: var(--surface2);
+    line-height: 1;
+    margin-bottom: -10px;
+  }
+  .section-divider h2 {
+    font-size: clamp(36px, 6vw, 56px);
+    margin-bottom: 16px;
+  }
+
+  /* Keyboard hint */
+  .key-hint {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    z-index: 100;
+  }
+  .key-hint kbd {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+  }
+
+  /* Application grid */
+  .app-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .app-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    transition: border-color 0.2s;
+  }
+  .app-card:hover { border-color: var(--accent); }
+  .app-card .app-icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  .app-card .app-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .app-card .app-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* Konigsberg nodes */
+  .koni-svg { width: 100%; max-height: 200px; }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 6px; bottom: 6px;
+    width: 1px;
+    background: var(--border);
+  }
+  .tl-item {
+    position: relative;
+    margin-bottom: 18px;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -24px; top: 6px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .tl-item.orange::before { background: var(--accent2); }
+  .tl-item.teal::before   { background: var(--accent3); }
+  .tl-year {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .tl-item.orange .tl-year { color: var(--accent2); }
+  .tl-desc { font-size: 14px; color: var(--text-dim); line-height: 1.5; margin-top: 2px; }
+
+  /* 5C card */
+  .five-c {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .c-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px 12px;
+  }
+  .c-card .c-letter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .c-card .c-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .c-card .c-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="progress-bar" id="progress"></div>
+<div class="key-hint"><kbd>←</kbd> <kbd>→</kbd> navigate</div>
+
+<div class="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide slide-title-main active" id="s1">
+    <div class="slide-num">graph/network · lecture series</div>
+    <h1>Graph<br><span>Theory</span></h1>
+    <p class="subtitle">Introduction &amp; Overview · Economics &amp; Finance</p>
+    <div style="margin-top:40px; display:flex; gap:10px; flex-wrap:wrap;">
+      <span class="pill accent">Introduction</span>
+      <span class="pill">Terminology</span>
+      <span class="pill orange">Applications</span>
+      <span class="pill teal">Research Trends</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: Contents -->
+  <div class="slide" id="s2">
+    <div class="slide-num">01 · Contents</div>
+    <h2>What we'll cover</h2>
+    <div style="max-width:600px;">
+      <div class="toc-item">
+        <div class="toc-num">01</div>
+        <div><div class="toc-label">Introduction to Graphs</div><div class="toc-sub">What are they? Why do they matter?</div></div>
+      </div>
+      <div class="toc-item">
+        <div class="toc-num">02</div>
+        <div><div class="toc-label">Basic Terminology</div><div class="toc-sub">Nodes, edges, paths, degrees</div></div>
+      </div>
+      <div class="toc-item">
+        <div class="toc-num">03</div>
+        <div><div class="toc-label">Why Graph Theory in Economics &amp; Finance?</div><div class="toc-sub">Applications, use cases, research examples</div></div>
+      </div>
+      <div class="toc-item">
+        <div class="toc-num">04</div>
+        <div><div class="toc-label">Research Trends</div><div class="toc-sub">GNN, knowledge graphs, systemic risk</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: What are graphs? -->
+  <div class="slide" id="s3">
+    <div class="slide-num">02 · Introduction</div>
+    <div class="two-col" style="align-items:center;">
+      <div>
+        <h2>What are<br>graphs?</h2>
+        <p class="text-dim">A graph is a mathematical structure used to model pairwise relations between objects — consisting of <strong style="color:var(--accent)">nodes (vertices)</strong> connected by <strong style="color:var(--accent2)">edges (links)</strong>.</p>
+        <div class="mt">
+          <span class="pill accent">G = (V, E)</span>
+          <span class="pill">V = vertices</span>
+          <span class="pill">E = edges</span>
+        </div>
+      </div>
+      <div>
+        <svg class="graph-svg" viewBox="0 0 320 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- edges -->
+          <line x1="80" y1="60" x2="240" y2="60" stroke="#3b6fd4" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+          <line x1="80" y1="60" x2="160" y2="180" stroke="#3b6fd4" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+          <line x1="240" y1="60" x2="160" y2="180" stroke="#3b6fd4" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+          <line x1="160" y1="180" x2="280" y2="180" stroke="#e07b39" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+          <line x1="240" y1="60" x2="280" y2="180" stroke="#e07b39" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+          <line x1="80" y1="60" x2="40" y2="160" stroke="#4ecca3" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+          <!-- nodes -->
+          <circle cx="80" cy="60" r="16" fill="#111827" stroke="#3b6fd4" stroke-width="2"/>
+          <text x="80" y="65" fill="#3b6fd4" text-anchor="middle" font-family="IBM Plex Mono" font-size="11">A</text>
+          <circle cx="240" cy="60" r="16" fill="#111827" stroke="#3b6fd4" stroke-width="2"/>
+          <text x="240" y="65" fill="#3b6fd4" text-anchor="middle" font-family="IBM Plex Mono" font-size="11">B</text>
+          <circle cx="160" cy="180" r="16" fill="#111827" stroke="#3b6fd4" stroke-width="2"/>
+          <text x="160" y="185" fill="#3b6fd4" text-anchor="middle" font-family="IBM Plex Mono" font-size="11">C</text>
+          <circle cx="280" cy="180" r="16" fill="#111827" stroke="#e07b39" stroke-width="2"/>
+          <text x="280" y="185" fill="#e07b39" text-anchor="middle" font-family="IBM Plex Mono" font-size="11">D</text>
+          <circle cx="40" cy="160" r="16" fill="#111827" stroke="#4ecca3" stroke-width="2"/>
+          <text x="40" y="165" fill="#4ecca3" text-anchor="middle" font-family="IBM Plex Mono" font-size="11">E</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Why graph? (everything connected) -->
+  <div class="slide" id="s4">
+    <div class="slide-num">02 · Why Graph?</div>
+    <h2>Everything is connected</h2>
+    <div class="three-col">
+      <div class="card accent-left">
+        <h3>Social</h3>
+        <ul>
+          <li>People &amp; relationships</li>
+          <li>Social networks (SNS)</li>
+          <li>Information diffusion</li>
+        </ul>
+      </div>
+      <div class="card accent-left-orange">
+        <h3 class="orange">Economic</h3>
+        <ul>
+          <li class="orange-bullet">Companies &amp; markets</li>
+          <li class="orange-bullet">Trade flows</li>
+          <li class="orange-bullet">Supply chains</li>
+        </ul>
+      </div>
+      <div class="card accent-left-teal">
+        <h3 class="teal">Geopolitical</h3>
+        <ul>
+          <li class="teal-bullet">Countries &amp; alliances</li>
+          <li class="teal-bullet">Historical linkages</li>
+          <li class="teal-bullet">Political networks</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt">
+      <div class="quote-block">
+        <p>Graph theory provides one of the simplest ways of expressing complex data and structure — serving as a universal language across computer science, economics, physics, chemistry, and sociology.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Seven Bridges -->
+  <div class="slide" id="s5">
+    <div class="slide-num">02 · Origins</div>
+    <h2>Where it began</h2>
+    <div class="two-col">
+      <div>
+        <div class="section-tag">1736 · Königsberg</div>
+        <p class="text-dim" style="margin-top:12px;">Leonhard Euler posed the famous <strong style="color:var(--text)">Seven Bridges of Königsberg</strong> problem: can one walk through the city crossing each of seven bridges exactly once?</p>
+        <p class="text-dim mt-sm">His proof that no such path exists founded <strong style="color:var(--accent)">graph theory</strong> and the concept of <strong style="color:var(--accent)">Eulerian paths</strong>.</p>
+        <div class="mt">
+          <div class="card" style="padding:14px 18px;">
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-dim); letter-spacing:1px; margin-bottom:8px;">KEY INSIGHT</div>
+            <p style="font-size:14px; color:var(--text);">Landmasses → <span style="color:var(--accent)">nodes</span><br>Bridges → <span style="color:var(--accent2)">edges</span></p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <svg viewBox="0 0 300 260" class="graph-svg">
+          <!-- Königsberg-style graph -->
+          <ellipse cx="150" cy="50" rx="30" ry="20" fill="#1a2234" stroke="#3b6fd4" stroke-width="2"/>
+          <text x="150" y="55" fill="#3b6fd4" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="600">A</text>
+          <ellipse cx="80" cy="140" rx="36" ry="22" fill="#1a2234" stroke="#3b6fd4" stroke-width="2"/>
+          <text x="80" y="145" fill="#3b6fd4" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="600">B</text>
+          <ellipse cx="150" cy="210" rx="30" ry="20" fill="#1a2234" stroke="#3b6fd4" stroke-width="2"/>
+          <text x="150" y="215" fill="#3b6fd4" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="600">C</text>
+          <ellipse cx="220" cy="140" rx="30" ry="20" fill="#1a2234" stroke="#e07b39" stroke-width="2"/>
+          <text x="220" y="145" fill="#e07b39" text-anchor="middle" font-family="IBM Plex Mono" font-size="12" font-weight="600">D</text>
+          <!-- edges (bridges) -->
+          <path d="M135,62 Q107,90 100,122" stroke="#4ecca3" stroke-width="1.5" fill="none" opacity="0.7"/>
+          <path d="M140,68 Q110,100 104,120" stroke="#4ecca3" stroke-width="1.5" fill="none" opacity="0.7"/>
+          <path d="M100,162 Q115,190 132,198" stroke="#4ecca3" stroke-width="1.5" fill="none" opacity="0.7"/>
+          <path d="M108,156 Q120,185 134,202" stroke="#4ecca3" stroke-width="1.5" fill="none" opacity="0.7"/>
+          <path d="M160,68 Q188,95 205,124" stroke="#4ecca3" stroke-width="1.5" fill="none" opacity="0.7"/>
+          <path d="M210,160 Q195,188 168,202" stroke="#4ecca3" stroke-width="1.5" fill="none" opacity="0.7"/>
+          <line x1="116" y1="140" x2="190" y2="140" stroke="#4ecca3" stroke-width="1.5" opacity="0.7"/>
+          <!-- bridge labels -->
+          <text x="98" y="98" fill="#4ecca3" font-family="IBM Plex Mono" font-size="9" opacity="0.8">e1</text>
+          <text x="112" y="102" fill="#4ecca3" font-family="IBM Plex Mono" font-size="9" opacity="0.8">e2</text>
+          <text x="98" y="178" fill="#4ecca3" font-family="IBM Plex Mono" font-size="9" opacity="0.8">e3</text>
+          <text x="112" y="185" fill="#4ecca3" font-family="IBM Plex Mono" font-size="9" opacity="0.8">e4</text>
+          <text x="192" y="98" fill="#4ecca3" font-family="IBM Plex Mono" font-size="9" opacity="0.8">e5</text>
+          <text x="195" y="185" fill="#4ecca3" font-family="IBM Plex Mono" font-size="9" opacity="0.8">e6</text>
+          <text x="148" y="135" fill="#4ecca3" font-family="IBM Plex Mono" font-size="9" opacity="0.8">e7</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: GNN applications -->
+  <div class="slide" id="s6">
+    <div class="slide-num">03 · GNN Applications</div>
+    <div class="section-tag teal">Graph Neural Networks</div>
+    <h2>Application domains</h2>
+    <div class="app-grid">
+      <div class="app-card">
+        <div class="app-icon">⚛️</div>
+        <div class="app-name">Physics</div>
+        <div class="app-desc">Particle interaction simulation, dynamic system modelling</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">🧪</div>
+        <div class="app-name">Molecules</div>
+        <div class="app-desc">Atoms as nodes, bonds as edges; drug discovery &amp; chemistry</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">🖼️</div>
+        <div class="app-name">Image</div>
+        <div class="app-desc">Superpixel graphs for scene understanding and detection</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">📝</div>
+        <div class="app-name">Text / NLP</div>
+        <div class="app-desc">Dependency parsing, semantic graphs, relation extraction</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">🌐</div>
+        <div class="app-name">Social Networks</div>
+        <div class="app-desc">Link prediction, community detection, influence modelling</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">🔬</div>
+        <div class="app-name">Generation</div>
+        <div class="app-desc">Graph generation tasks: molecule synthesis, circuit design</div>
+      </div>
+    </div>
+    <div class="mt-sm" style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-dim);">
+      Ref: Graph Neural Networks: A Review of Methods and Applications (2018)
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Why econ/finance -->
+  <div class="slide" id="s7">
+    <div class="slide-num">04 · Economics &amp; Finance</div>
+    <h2>Why graph in<br>economics &amp; finance?</h2>
+    <div class="two-col">
+      <div>
+        <div class="card accent-left" style="margin-bottom:14px;">
+          <h3>Industry Validation</h3>
+          <div class="quote-block" style="margin-top:10px;">
+            <p>Graph analysis is possibly the single most effective competitive differentiator for data-driven operations and decisions.</p>
+            <div class="source">— GARTNER</div>
+          </div>
+          <div class="quote-block" style="margin-top:10px;">
+            <p>Graph analysis is the true killer app for big data.</p>
+            <div class="source">— FORRESTER</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card accent-left-orange">
+          <h3 class="orange">Key Applications</h3>
+          <ul class="mt-sm">
+            <li class="orange-bullet"><strong>World trade networks</strong> — bilateral flows, spillovers</li>
+            <li class="orange-bullet"><strong>Systemic risk</strong> — contagion &amp; bank runs</li>
+            <li class="orange-bullet"><strong>Firm correlation networks</strong> — market cohesion</li>
+            <li class="orange-bullet"><strong>Credit risk</strong> — business community analysis</li>
+            <li class="orange-bullet"><strong>Fraud detection</strong> — money flow patterns</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: US 100 firms -->
+  <div class="slide" id="s8">
+    <div class="slide-num">04 · Market Cohesion</div>
+    <h2>US Market: Correlation Networks</h2>
+    <div class="two-col">
+      <div class="card">
+        <div class="section-tag">2005</div>
+        <div class="big-stat mt-sm">Sparse</div>
+        <p class="text-dim">100 firms with ρ &gt; 0.6 threshold. Network shows loose clusters with distinct sub-communities. Markets are segmented.</p>
+        <div class="mt-sm">
+          <span class="pill">Low integration</span>
+          <span class="pill">Clear clusters</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-tag orange">2015</div>
+        <div class="big-stat orange mt-sm">Dense</div>
+        <p class="text-dim">Same 100 firms, same threshold. Network is now a tightly packed mass — indicative of increased market co-movement and systemic risk.</p>
+        <div class="mt-sm">
+          <span class="pill orange">High integration</span>
+          <span class="pill orange">↑ Systemic risk</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt">
+      <p class="text-dim mono" style="font-size:12px;">Source: quantdare.com/graph-theory-finance</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: Commercial lending 5Cs -->
+  <div class="slide" id="s9">
+    <div class="slide-num">04 · Use Case</div>
+    <div class="section-tag orange">Commercial Lending Risk</div>
+    <h2>The 5 C's of Credit</h2>
+    <div class="five-c">
+      <div class="c-card">
+        <div class="c-letter">C</div>
+        <div class="c-name">Character</div>
+        <div class="c-desc">Borrower's payment history and reputation</div>
+      </div>
+      <div class="c-card">
+        <div class="c-letter">C</div>
+        <div class="c-name">Capacity</div>
+        <div class="c-desc">Income sufficiency to repay debts</div>
+      </div>
+      <div class="c-card">
+        <div class="c-letter">C</div>
+        <div class="c-name">Capital</div>
+        <div class="c-desc">Equity contribution reducing bank's risk</div>
+      </div>
+      <div class="c-card">
+        <div class="c-letter">C</div>
+        <div class="c-name">Collateral</div>
+        <div class="c-desc">Alternative repayment source if cash fails</div>
+      </div>
+      <div class="c-card">
+        <div class="c-letter">C</div>
+        <div class="c-name">Conditions</div>
+        <div class="c-desc">Loan structure, interest rate, covenants</div>
+      </div>
+    </div>
+    <div class="mt">
+      <div class="quote-block">
+        <p>Problem: We need a better understanding of the business "community" to understand how business relationships are affecting loan risk. Knowing your customers and the market in which they invest are two of the simplest and most basic tools.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: Graph usage domains -->
+  <div class="slide" id="s10">
+    <div class="slide-num">04 · Applications</div>
+    <h2>Graph usage across industries</h2>
+    <div class="app-grid">
+      <div class="app-card">
+        <div class="app-icon">📣</div>
+        <div class="app-name">Marketing Analytics</div>
+        <div class="app-desc">Social influencer identification, viral diffusion</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">🔍</div>
+        <div class="app-name">Fraud Detection</div>
+        <div class="app-desc">Analyzing suspicious money flows and ring structures</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">🏭</div>
+        <div class="app-name">Supply Chain</div>
+        <div class="app-desc">Optimal warehouse and delivery center placement</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">💊</div>
+        <div class="app-name">Pharma</div>
+        <div class="app-desc">Drug interaction graphs, chemical reaction modelling</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">📡</div>
+        <div class="app-name">Telecom</div>
+        <div class="app-desc">Network coverage optimization and routing</div>
+      </div>
+      <div class="app-card">
+        <div class="app-icon">🏦</div>
+        <div class="app-name">Banking</div>
+        <div class="app-desc">Systemic risk, interbank exposure, AML</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: Knowledge graph -->
+  <div class="slide" id="s11">
+    <div class="slide-num">05 · Knowledge Graphs</div>
+    <h2>Knowledge graphs</h2>
+    <div class="two-col">
+      <div>
+        <div class="card accent-left">
+          <h3>Triple Structure</h3>
+          <p class="text-dim">(Head, <span style="color:var(--accent2)">relation</span>, Tail)</p>
+          <div class="mt-sm">
+            <span class="pill">Apple</span>
+            <span class="pill orange">→ founded_by →</span>
+            <span class="pill">Steve Jobs</span>
+          </div>
+        </div>
+        <div class="card mt" style="padding:18px 22px;">
+          <h3>Three Eras of AI</h3>
+          <div class="timeline mt-sm">
+            <div class="tl-item">
+              <div class="tl-year">ERA 01</div>
+              <div class="tl-desc"><strong style="color:var(--text)">Procedural</strong> — Raw data + rules → answers</div>
+            </div>
+            <div class="tl-item orange">
+              <div class="tl-year">ERA 02</div>
+              <div class="tl-desc"><strong style="color:var(--text)">Machine Learning</strong> — Data + answers → rules (10M weights)</div>
+            </div>
+            <div class="tl-item teal">
+              <div class="tl-year">ERA 03</div>
+              <div class="tl-desc"><strong style="color:var(--text)">Knowledge Graph</strong> — Data + ML + graph → knowledge + explanations</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card accent-left-teal" style="height:100%;">
+          <h3 class="teal">Databases</h3>
+          <ul class="mt-sm">
+            <li class="teal-bullet"><strong>Google Knowledge Graph</strong> — powering search entity panels</li>
+            <li class="teal-bullet"><strong>Wikidata</strong> — open structured knowledge base</li>
+            <li class="teal-bullet"><strong>Neo4j</strong> — graph database for enterprise</li>
+          </ul>
+          <hr class="rule">
+          <p class="text-dim" style="font-size:13px;">Enables natural language querying, recommendation, and explainable AI through structured relational knowledge.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 12: Systemic risk / Quantum -->
+  <div class="slide" id="s12">
+    <div class="slide-num">05 · Systemic Risk</div>
+    <div class="section-tag">Research Highlight</div>
+    <h2>Forecasting financial crashes</h2>
+    <div class="two-col">
+      <div>
+        <div class="card accent-left-orange">
+          <h3 class="orange">Random Financial Network</h3>
+          <p class="text-dim mt-sm">Dots = financial institutions<br>Links = cross-holdings<br>Edge thickness = exposure size</p>
+          <svg viewBox="0 0 260 180" class="graph-svg" style="margin-top:16px;">
+            <!-- dense financial network -->
+            <circle cx="130" cy="30" r="8" fill="#e07b39" opacity="0.9"/>
+            <circle cx="60" cy="80" r="8" fill="#e07b39" opacity="0.9"/>
+            <circle cx="200" cy="80" r="8" fill="#e07b39" opacity="0.9"/>
+            <circle cx="90" cy="150" r="8" fill="#e07b39" opacity="0.9"/>
+            <circle cx="170" cy="150" r="8" fill="#e07b39" opacity="0.9"/>
+            <circle cx="130" cy="105" r="8" fill="#e07b39" opacity="0.9"/>
+            <circle cx="40" cy="140" r="8" fill="#e07b39" opacity="0.9"/>
+            <circle cx="220" cy="140" r="8" fill="#e07b39" opacity="0.9"/>
+            <!-- edges - many crossing lines -->
+            <line x1="130" y1="30" x2="60" y2="80" stroke="#3b6fd4" stroke-width="1.5" opacity="0.5"/>
+            <line x1="130" y1="30" x2="200" y2="80" stroke="#3b6fd4" stroke-width="1.5" opacity="0.5"/>
+            <line x1="130" y1="30" x2="90" y2="150" stroke="#3b6fd4" stroke-width="2.5" opacity="0.4"/>
+            <line x1="130" y1="30" x2="170" y2="150" stroke="#3b6fd4" stroke-width="1" opacity="0.4"/>
+            <line x1="60" y1="80" x2="200" y2="80" stroke="#3b6fd4" stroke-width="3" opacity="0.5"/>
+            <line x1="60" y1="80" x2="90" y2="150" stroke="#3b6fd4" stroke-width="1.5" opacity="0.5"/>
+            <line x1="60" y1="80" x2="170" y2="150" stroke="#3b6fd4" stroke-width="1" opacity="0.3"/>
+            <line x1="200" y1="80" x2="170" y2="150" stroke="#3b6fd4" stroke-width="2" opacity="0.5"/>
+            <line x1="200" y1="80" x2="90" y2="150" stroke="#3b6fd4" stroke-width="1" opacity="0.3"/>
+            <line x1="90" y1="150" x2="170" y2="150" stroke="#3b6fd4" stroke-width="2.5" opacity="0.5"/>
+            <line x1="130" y1="105" x2="60" y2="80" stroke="#3b6fd4" stroke-width="1" opacity="0.4"/>
+            <line x1="130" y1="105" x2="200" y2="80" stroke="#3b6fd4" stroke-width="1" opacity="0.4"/>
+            <line x1="40" y1="140" x2="60" y2="80" stroke="#3b6fd4" stroke-width="1.5" opacity="0.5"/>
+            <line x1="220" y1="140" x2="200" y2="80" stroke="#3b6fd4" stroke-width="1.5" opacity="0.5"/>
+            <line x1="40" y1="140" x2="90" y2="150" stroke="#3b6fd4" stroke-width="1" opacity="0.4"/>
+            <line x1="220" y1="140" x2="170" y2="150" stroke="#3b6fd4" stroke-width="1" opacity="0.4"/>
+          </svg>
+        </div>
+      </div>
+      <div>
+        <div class="card accent-left" style="margin-bottom:14px;">
+          <h3>Computational Challenge</h3>
+          <p class="text-dim">Even with complete knowledge of all assets and cross-holdings in a network of just <strong style="color:var(--text)">20–30 institutions</strong>, classical computation would take longer than the age of the universe to solve.</p>
+          <div class="mt-sm"><span class="pill orange">13.7 billion years</span> <span class="pill">NP-hard</span></div>
+        </div>
+        <div class="card accent-left-teal">
+          <h3 class="teal">Solution: Quantum Computing</h3>
+          <p class="text-dim">Quantum annealing maps the crash-prediction problem to an Ising model, enabling exponential speedup for graph-structured financial networks.</p>
+          <div class="mt-sm">
+            <span class="pill teal">Physical Review A, 2019</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 13: Economic pathway -->
+  <div class="slide" id="s13">
+    <div class="slide-num">05 · Contagion</div>
+    <h2>Economic contagion pathways</h2>
+    <div class="two-col">
+      <div>
+        <p class="text-dim">Analogous to disease spreading through protein interaction networks, economic shocks propagate through interconnected financial systems.</p>
+        <div class="mt">
+          <div class="card accent-left-orange" style="margin-bottom:12px;">
+            <h3 class="orange">SNS Rumors</h3>
+            <p class="text-dim">Misinformation cascades through social graphs, triggering panic and market reactions before fact-checking can occur.</p>
+          </div>
+          <div class="card accent-left" style="margin-bottom:12px;">
+            <h3>Bank Run Dynamics</h3>
+            <p class="text-dim">Depositor networks create coordination failure; one node's withdrawal signals others to follow.</p>
+          </div>
+          <div class="card accent-left-teal">
+            <h3 class="teal">Systemic Risk</h3>
+            <p class="text-dim">Interconnected balance sheets mean one institution's failure cascades across the network.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <svg viewBox="0 0 280 300" class="graph-svg">
+          <!-- Disease-pathway style graph -->
+          <!-- Central "shock" node -->
+          <rect x="115" y="10" width="50" height="28" rx="4" fill="#1a2234" stroke="#e07b39" stroke-width="1.5"/>
+          <text x="140" y="28" fill="#e07b39" text-anchor="middle" font-family="IBM Plex Sans" font-size="11" font-weight="600">SHOCK</text>
+          <!-- protein nodes (institutions) -->
+          <circle cx="50" cy="90" r="9" fill="#e07b39" opacity="0.85"/>
+          <circle cx="100" cy="70" r="7" fill="#111827" stroke="#3b6fd4" stroke-width="1.5"/>
+          <circle cx="150" cy="80" r="7" fill="#111827" stroke="#3b6fd4" stroke-width="1.5"/>
+          <circle cx="200" cy="90" r="9" fill="#e07b39" opacity="0.85"/>
+          <circle cx="240" cy="70" r="7" fill="#111827" stroke="#3b6fd4" stroke-width="1.5"/>
+          <circle cx="60" cy="150" r="7" fill="#111827" stroke="#3b6fd4" stroke-width="1.5"/>
+          <circle cx="110" cy="130" r="9" fill="#e07b39" opacity="0.85"/>
+          <circle cx="160" cy="140" r="7" fill="#111827" stroke="#3b6fd4" stroke-width="1.5"/>
+          <circle cx="210" cy="130" r="9" fill="#e07b39" opacity="0.85"/>
+          <circle cx="80" cy="210" r="7" fill="#111827" stroke="#3b6fd4" stroke-width="1.5"/>
+          <circle cx="130" cy="200" r="9" fill="#e07b39" opacity="0.85"/>
+          <circle cx="180" cy="205" r="7" fill="#111827" stroke="#3b6fd4" stroke-width="1.5"/>
+          <circle cx="230" cy="190" r="9" fill="#e07b39" opacity="0.85"/>
+          <!-- contagion lines (red) -->
+          <line x1="140" y1="38" x2="50" y2="80" stroke="#e07b39" stroke-width="1" opacity="0.6"/>
+          <line x1="140" y1="38" x2="100" y2="62" stroke="#e07b39" stroke-width="1" opacity="0.6"/>
+          <line x1="140" y1="38" x2="150" y2="72" stroke="#e07b39" stroke-width="1" opacity="0.6"/>
+          <line x1="140" y1="38" x2="200" y2="80" stroke="#e07b39" stroke-width="1" opacity="0.6"/>
+          <line x1="140" y1="38" x2="240" y2="62" stroke="#e07b39" stroke-width="1" opacity="0.6"/>
+          <line x1="140" y1="38" x2="110" y2="120" stroke="#e07b39" stroke-width="1" opacity="0.5"/>
+          <line x1="140" y1="38" x2="210" y2="120" stroke="#e07b39" stroke-width="1" opacity="0.5"/>
+          <line x1="140" y1="38" x2="130" y2="190" stroke="#e07b39" stroke-width="1" opacity="0.4"/>
+          <line x1="140" y1="38" x2="230" y2="180" stroke="#e07b39" stroke-width="1" opacity="0.4"/>
+          <!-- interaction lines (blue) -->
+          <line x1="50" y1="90" x2="100" y2="70" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <line x1="100" y1="70" x2="150" y2="80" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <line x1="150" y1="80" x2="200" y2="90" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <line x1="200" y1="90" x2="240" y2="70" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <line x1="60" y1="150" x2="110" y2="130" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <line x1="110" y1="130" x2="160" y2="140" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <line x1="160" y1="140" x2="210" y2="130" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <line x1="80" y1="210" x2="130" y2="200" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <line x1="130" y1="200" x2="180" y2="205" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <line x1="180" y1="205" x2="230" y2="190" stroke="#3b6fd4" stroke-width="1" opacity="0.5"/>
+          <!-- pathway highlight bubbles -->
+          <ellipse cx="65" cy="115" rx="32" ry="25" fill="#e07b39" opacity="0.05" stroke="#e07b39" stroke-width="0.5" stroke-dasharray="3,3"/>
+          <ellipse cx="195" cy="115" rx="30" ry="25" fill="#e07b39" opacity="0.05" stroke="#e07b39" stroke-width="0.5" stroke-dasharray="3,3"/>
+          <ellipse cx="130" cy="215" rx="32" ry="22" fill="#e07b39" opacity="0.05" stroke="#e07b39" stroke-width="0.5" stroke-dasharray="3,3"/>
+          <!-- legend -->
+          <circle cx="20" cy="270" r="6" fill="#e07b39" opacity="0.85"/>
+          <text x="32" y="274" fill="#8899b0" font-family="IBM Plex Mono" font-size="10">Affected institution</text>
+          <circle cx="20" cy="288" r="6" fill="#111827" stroke="#3b6fd4" stroke-width="1.5"/>
+          <text x="32" y="292" fill="#8899b0" font-family="IBM Plex Mono" font-size="10">Healthy institution</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 14: Herding vs Cascade table -->
+  <div class="slide" id="s14">
+    <div class="slide-num">06 · Terminology</div>
+    <h2>Herding vs Cascade effects</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Concept</th>
+          <th>Key Emphasis</th>
+          <th>Driver</th>
+          <th>Common Context</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cascade Effect</td>
+          <td>Sequential chain reaction</td>
+          <td>Initial trigger event</td>
+          <td>Financial markets, systems</td>
+        </tr>
+        <tr>
+          <td>Bandwagon Effect</td>
+          <td>Popularity, social conformity</td>
+          <td>Desire to join majority</td>
+          <td>Behavioral decisions</td>
+        </tr>
+        <tr>
+          <td>Herd Behavior</td>
+          <td>Unquestioning conformity</td>
+          <td>Uncertainty</td>
+          <td>Financial decisions</td>
+        </tr>
+        <tr>
+          <td>Domino Effect</td>
+          <td>Direct cause-effect sequence</td>
+          <td>Direct causal links</td>
+          <td>Political, structural</td>
+        </tr>
+        <tr>
+          <td>Contagion</td>
+          <td>Rapid spread across boundaries</td>
+          <td>Interconnectedness</td>
+          <td>Financial crises, disease</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SLIDE 15: Recommend system -->
+  <div class="slide" id="s15">
+    <div class="slide-num">07 · Applications</div>
+    <h2>Graph-powered recommendation</h2>
+    <div class="two-col">
+      <div>
+        <div class="card accent-left-teal">
+          <h3 class="teal">RippleNet Architecture</h3>
+          <p class="text-dim">Propagates user preferences through a knowledge graph to discover items the user may not have directly interacted with.</p>
+          <hr class="rule">
+          <p style="font-size:13px; color:var(--text); margin-bottom:8px;">Triple structure:</p>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="pill">Entity</span>
+              <span style="color:var(--accent2); font-family:'IBM Plex Mono',monospace; font-size:12px;">→ relation →</span>
+              <span class="pill">Entity</span>
+            </div>
+          </div>
+          <hr class="rule">
+          <ul class="mt-sm">
+            <li class="teal-bullet">User watches <em>Cast Away</em> → Tom Hanks</li>
+            <li class="teal-bullet">Tom Hanks → starred in → <em>Forrest Gump</em></li>
+            <li class="teal-bullet">Recommend: <em>Forrest Gump</em></li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px;">
+          <h3>Related Research</h3>
+          <ul class="mt-sm">
+            <li><strong>KGCN</strong> — Knowledge Graph Convolutional Networks for Recommender Systems (WWW 2019)</li>
+            <li><strong>KGNN-LS</strong> — Label Smoothness for KG-aware recommendation</li>
+            <li><strong>KGAT</strong> — Knowledge Graph Attention Network (KDD 2019)</li>
+            <li><strong>RippleNet</strong> — Propagating user preferences on the KG (RecSys 2018)</li>
+          </ul>
+        </div>
+        <div class="card accent-left-orange">
+          <h3 class="orange">Financial application</h3>
+          <p class="text-dim">Same graph traversal logic applies to: stock co-movement networks, analyst report knowledge graphs, supply-chain risk recommendation.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 16: Summary -->
+  <div class="slide" id="s16">
+    <div class="slide-num">08 · Summary</div>
+    <h2>Key takeaways</h2>
+    <div class="two-col">
+      <div>
+        <div class="card accent-left" style="margin-bottom:14px;">
+          <h3>Graph Theory Fundamentals</h3>
+          <ul>
+            <li>Euler's 1736 Königsberg problem → birth of GT</li>
+            <li>G = (V, E): vertices + edges encode relationships</li>
+            <li>Universal language across all scientific domains</li>
+          </ul>
+        </div>
+        <div class="card accent-left-orange">
+          <h3 class="orange">Finance &amp; Economics</h3>
+          <ul>
+            <li class="orange-bullet">Trade networks, systemic risk, contagion</li>
+            <li class="orange-bullet">Market correlation graphs evolve over time</li>
+            <li class="orange-bullet">Credit risk needs community-level analysis</li>
+            <li class="orange-bullet">Quantum computing tackles graph complexity</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="card accent-left-teal">
+          <h3 class="teal">Research Frontier</h3>
+          <ul>
+            <li class="teal-bullet">GNNs generalize deep learning to graph-structured data</li>
+            <li class="teal-bullet">Knowledge graphs enable explainable AI</li>
+            <li class="teal-bullet">Social &amp; information cascade modelling</li>
+            <li class="teal-bullet">Graph databases (Neo4j) for financial intelligence</li>
+          </ul>
+        </div>
+        <div class="mt" style="display:flex; flex-wrap:wrap; gap:8px;">
+          <span class="pill accent">GNN</span>
+          <span class="pill teal">Knowledge Graph</span>
+          <span class="pill orange">Systemic Risk</span>
+          <span class="pill">Fiedler Value</span>
+          <span class="pill">NetworkX</span>
+          <span class="pill">Neo4j</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.deck -->
+
+<!-- Navigation -->
+<nav>
+  <button id="btn-prev" onclick="changeSlide(-1)" disabled>←</button>
+  <span class="nav-counter" id="counter">1 / 16</span>
+  <button id="btn-next" onclick="changeSlide(1)">→</button>
+</nav>
+
+<script>
+  // Background animated graph
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < 40; i++) {
+    nodes.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 3 + 1.5
+    });
+  }
+
+  function drawBg() {
+    ctx.clearRect(0, 0, W, H);
+    nodes.forEach(n => {
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
+    });
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i+1; j < nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < 160) {
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.strokeStyle = `rgba(59,111,212,${0.6 - d/260})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    nodes.forEach(n => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(59,111,212,0.7)';
+      ctx.fill();
+    });
+    requestAnimationFrame(drawBg);
+  }
+  drawBg();
+
+  // Slide logic
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let cur = 0;
+
+  function changeSlide(dir) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(total - 1, cur + dir));
+    slides[cur].classList.add('active');
+    document.getElementById('counter').textContent = `${cur+1} / ${total}`;
+    document.getElementById('btn-prev').disabled = cur === 0;
+    document.getElementById('btn-next').disabled = cur === total - 1;
+    document.getElementById('progress').style.width = `${((cur+1)/total)*100}%`;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') changeSlide(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   changeSlide(-1);
+  });
+
+  // Touch swipe
+  let tx = 0;
+  document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = tx - e.changedTouches[0].clientX;
+    if (Math.abs(dx) > 50) changeSlide(dx > 0 ? 1 : -1);
+  });
+
+  // Init progress
+  document.getElementById('progress').style.width = `${(1/total)*100}%`;
+</script>
+</body>
+</html>
