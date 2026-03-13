@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Terminology — Lecture Slides</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0a0c10;
+    --surface:  #111318;
+    --surface2: #181b24;
+    --border:   rgba(255,255,255,0.07);
+    --accent:   #c084fc;   /* purple — LLM theme */
+    --accent2:  #f472b6;   /* pink */
+    --accent3:  #fbbf24;   /* amber */
+    --text:     #edeef2;
+    --muted:    #636874;
+    --cs-bg:    rgba(192,132,252,0.07);
+    --cs-bord:  rgba(192,132,252,0.22);
+    --cs-text:  #c084fc;
+    --fin-bg:   rgba(244,114,182,0.07);
+    --fin-bord: rgba(244,114,182,0.22);
+    --fin-text: #f472b6;
+    --ki-bg:    rgba(251,191,36,0.06);
+    --ki-bord:  rgba(251,191,36,0.22);
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow: hidden; }
+
+  #deck { width: 100vw; height: 100vh; position: relative; }
+
+  /* grid bg */
+  #deck::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 52px 52px;
+    pointer-events: none;
+  }
+
+  /* slides */
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 52px 72px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  /* top accent bar */
+  #bar { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); box-shadow: 0 0 10px var(--accent); z-index: 200; }
+  #progress { position: fixed; top: 0; left: 0; height: 2px; background: var(--accent); box-shadow: 0 0 10px var(--accent); transition: width 0.4s ease; z-index: 201; }
+
+  #counter { position: fixed; bottom: 26px; right: 34px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); z-index: 100; }
+  #hint    { position: fixed; bottom: 20px; left: 34px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); z-index: 100; }
+  kbd { background: var(--surface2); border: 0.5px solid var(--border); border-radius: 3px; padding: 1px 5px; font-family: 'DM Mono', monospace; font-size: 10px; }
+  #nav { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 100; }
+  #nav button { background: var(--surface2); border: 0.5px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px; padding: 7px 18px; border-radius: 6px; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+  #nav button:hover { background: var(--surface); border-color: rgba(255,255,255,0.18); }
+  #nav button:disabled { opacity: 0.28; cursor: default; }
+
+  /* typography */
+  .eyebrow { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .slide-title { font-family: 'DM Serif Display', serif; font-size: clamp(34px,4.2vw,60px); line-height: 1.1; color: var(--text); margin-bottom: 10px; }
+  .slide-title em { font-style: italic; color: var(--accent); }
+  .sub { font-size: 16px; font-weight: 300; color: var(--muted); line-height: 1.6; max-width: 600px; text-align: center; }
+  .term-h { font-family: 'DM Serif Display', serif; font-size: clamp(26px,3.2vw,44px); color: var(--text); line-height: 1.15; margin-bottom: 3px; }
+  .mono-tag { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+  .tagline { font-size: 13px; font-style: italic; color: var(--muted); margin-bottom: 20px; }
+
+  /* tags */
+  .tag-row { display: flex; gap: 10px; justify-content: center; margin-top: 26px; flex-wrap: wrap; }
+  .tag { font-family: 'DM Mono', monospace; font-size: 10px; padding: 5px 12px; border-radius: 4px; border: 0.5px solid; }
+  .tag-cs   { background: var(--cs-bg);  border-color: var(--cs-bord);  color: var(--cs-text); }
+  .tag-fin  { background: var(--fin-bg); border-color: var(--fin-bord); color: var(--fin-text); }
+  .tag-gold { background: rgba(251,191,36,0.07); border-color: var(--ki-bord); color: var(--accent3); }
+
+  /* two-col def */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; width: 100%; }
+  .def-box { border-radius: 10px; padding: 18px; border: 0.5px solid; }
+  .def-box.cs  { background: var(--cs-bg);  border-color: var(--cs-bord); }
+  .def-box.fin { background: var(--fin-bg); border-color: var(--fin-bord); }
+  .def-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.1em; margin-bottom: 9px; }
+  .def-box.cs  .def-label { color: var(--cs-text); }
+  .def-box.fin .def-label { color: var(--fin-text); }
+  .def-box p { font-size: 13px; color: var(--muted); line-height: 1.65; }
+  .def-box strong { color: var(--text); font-weight: 500; }
+
+  /* key insight */
+  .insight { background: var(--ki-bg); border: 0.5px solid var(--ki-bord); border-left: 3px solid var(--accent3); border-radius: 8px; padding: 13px 18px; font-size: 13px; color: var(--muted); line-height: 1.6; width: 100%; }
+  .insight strong { color: var(--text); font-weight: 500; }
+  .ki-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--accent3); letter-spacing: 0.1em; margin-bottom: 5px; }
+
+  /* inner wrapper */
+  .inner { width: 100%; max-width: 940px; }
+
+  /* pipeline slide */
+  .pip-row { display: flex; align-items: center; gap: 0; width: 100%; margin-top: 24px; }
+  .pip-step { flex: 1; background: var(--surface2); border: 0.5px solid var(--border); border-radius: 10px; padding: 16px 12px; text-align: center; }
+  .pip-step.hl { border-color: var(--accent); background: rgba(192,132,252,0.07); }
+  .pip-step .sn { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 4px; }
+  .pip-step .sl { font-weight: 500; font-size: 13px; color: var(--text); }
+  .pip-step .ss { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  .pip-arr { flex: 0 0 26px; text-align: center; color: var(--muted); font-size: 16px; }
+  .big-a { background: var(--ki-bg); border: 0.5px solid var(--ki-bord); border-left: 3px solid var(--accent3); border-radius: 8px; padding: 14px 20px; margin-top: 16px; }
+  .big-a .bl { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--accent3); letter-spacing: 0.1em; margin-bottom: 5px; }
+  .big-a p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .big-a strong { color: var(--text); font-weight: 500; }
+
+  /* summary */
+  .sum-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; max-width: 900px; margin-top: 24px; }
+  .sum-card { background: var(--surface2); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px; }
+  .sum-card .st { font-family: 'DM Serif Display', serif; font-size: 14px; color: var(--text); margin-bottom: 5px; }
+  .sum-card .sc { font-size: 10px; color: var(--cs-text); line-height: 1.5; margin-bottom: 3px; }
+  .sum-card .sf { font-size: 10px; color: var(--fin-text); line-height: 1.5; }
+  .sum-card.wide { grid-column: span 2; }
+
+  /* lm slide — token viz */
+  .token-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0; }
+  .tok { font-family: 'DM Mono', monospace; font-size: 12px; padding: 5px 10px; border-radius: 5px; border: 0.5px solid; }
+  .tok-gray   { background: var(--surface2); border-color: var(--border); color: var(--muted); }
+  .tok-purple { background: rgba(192,132,252,0.12); border-color: var(--cs-bord); color: var(--cs-text); }
+  .tok-pink   { background: rgba(244,114,182,0.12); border-color: var(--fin-bord); color: var(--fin-text); }
+  .tok-gold   { background: rgba(251,191,36,0.12); border-color: var(--ki-bord); color: var(--accent3); }
+  .arrow-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin: 6px 0; }
+
+  /* animations */
+  .slide.active .inner,
+  .slide.active .pip-row,
+  .slide.active .big-a,
+  .slide.active .sum-grid,
+  .slide.active .slide-title,
+  .slide.active .sub,
+  .slide.active .tag-row {
+    animation: fadeUp 0.45s ease both;
+  }
+  .slide.active .two-col .def-box:nth-child(1) { animation: fadeUp 0.4s 0.08s ease both; }
+  .slide.active .two-col .def-box:nth-child(2) { animation: fadeUp 0.4s 0.18s ease both; }
+  .slide.active .insight { animation: fadeUp 0.4s 0.28s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="deck">
+
+<!-- ══ SLIDE 0 · TITLE ══════════════════════════════════════ -->
+<div class="slide active" id="s0" style="text-align:center;">
+  <p class="eyebrow">Lecture · AI for Finance</p>
+  <h1 class="slide-title">Large Language<br><em>Models</em></h1>
+  <p class="sub">Core terminology — from Language Models to modern LLMs, with CS definitions and finance analogies</p>
+  <div class="tag-row">
+    <span class="tag tag-cs">CS definition</span>
+    <span class="tag tag-fin">Finance / econ analogy</span>
+    <span class="tag tag-gold">Key insight</span>
+  </div>
+</div>
+
+<!-- ══ SLIDE 1 · WHAT IS A LANGUAGE MODEL ══════════════════ -->
+<div class="slide" id="s1">
+  <div class="inner">
+    <p class="eyebrow">Foundation</p>
+    <h2 class="term-h">What is a Language Model?</h2>
+    <p class="mono-tag">P(next token | context)</p>
+    <p class="tagline">"A probability distribution over sequences of tokens"</p>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p>A <strong>statistical model</strong> that assigns probabilities to sequences of tokens. Given a context <em>w₁, w₂, … wₙ</em>, a language model estimates <strong>P(wₙ₊₁ | w₁…wₙ)</strong> — the probability of the next token. Training = maximizing likelihood of observed text.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like a <strong>time-series forecasting model</strong> (e.g., AR/ARIMA). Given a history of observations, it predicts the next value. A language model does the same over token sequences instead of price sequences. <strong>The "price" is the next word.</strong></p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      Every LLM is, at its core, a <strong>next-token predictor</strong>. All apparent reasoning, creativity, and knowledge emerges from this single objective applied at massive scale. Understanding this prevents anthropomorphizing the model.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 2 · TOKEN ══════════════════════════════════════ -->
+<div class="slide" id="s2">
+  <div class="inner">
+    <p class="eyebrow">Term 01 / 09</p>
+    <h2 class="term-h">Token</h2>
+    <p class="mono-tag">the atomic unit of text</p>
+    <p class="tagline">"Not a word — a sub-word piece"</p>
+    <div style="margin-bottom:14px;">
+      <p style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:6px;">Example: "Quantitative finance" → 3 tokens</p>
+      <div class="token-row">
+        <span class="tok tok-purple">Quant</span>
+        <span class="tok tok-purple">itative</span>
+        <span class="tok tok-pink">&nbsp;finance</span>
+      </div>
+      <p style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;">~1 token ≈ 4 characters in English</p>
+    </div>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p>The <strong>smallest unit of text</strong> an LLM processes. Produced by a tokenizer (e.g., BPE) that splits text into sub-word pieces. A vocabulary of ~50,000 tokens covers most languages. Every input and output is a sequence of token IDs.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like a <strong>tick or bar in market data</strong> — the atomic granularity at which information is processed. Just as tick size determines price resolution, token granularity determines how the model "sees" language. Coarser tokenization = lower resolution.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      LLM pricing (API cost) is denominated in tokens, not words or characters. Understanding tokenization explains why <strong>Korean/Chinese text costs ~2–3× more</strong> than equivalent English — denser scripts → more tokens per concept.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 3 · PARAMETERS / WEIGHTS ══════════════════════ -->
+<div class="slide" id="s3">
+  <div class="inner">
+    <p class="eyebrow">Term 02 / 09</p>
+    <h2 class="term-h">Parameters (Weights)</h2>
+    <p class="mono-tag">θ ∈ ℝⁿ  — the "knowledge" of the model</p>
+    <p class="tagline">"Billions of numbers learned from trillions of tokens"</p>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p>The <strong>learnable numerical values</strong> of a neural network, updated during training via gradient descent to minimize prediction loss. A "70B model" has 70 billion parameters. Parameters encode all learned patterns — syntax, facts, reasoning heuristics.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like the <strong>coefficients in a fitted factor model</strong>. Each parameter is a learned coefficient that weights a feature. Training = running a regression over all human text to fit coefficients. More parameters = a richer, higher-dimensional factor space.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      Parameters are <strong>static after training</strong> — the model doesn't "learn" during inference. What looks like reasoning is pattern-matching over frozen weights. This is why RAG (injecting live data) is necessary for tasks requiring current information.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 4 · TRANSFORMER ════════════════════════════════ -->
+<div class="slide" id="s4">
+  <div class="inner">
+    <p class="eyebrow">Term 03 / 09</p>
+    <h2 class="term-h">Transformer</h2>
+    <p class="mono-tag">architecture underlying all modern LLMs</p>
+    <p class="tagline">"Attention is all you need — Vaswani et al., 2017"</p>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p>A neural network architecture that processes sequences using <strong>self-attention layers</strong>. Each token attends to every other token in the context, weighted by relevance. Stacking many attention + feed-forward layers creates a deep model capable of complex reasoning.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like a <strong>full covariance matrix vs. diagonal</strong>. Older models (RNNs) processed tokens sequentially — like assuming AR(1). Transformers compute all pairwise token relationships simultaneously — like estimating the full Σ. More expressive, more computationally intensive.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      The transformer's key innovation is <strong>parallelism</strong>: all tokens are processed simultaneously (not one-by-one). This enables training on massive datasets with GPUs. The tradeoff: quadratic memory cost in sequence length — why context windows have limits.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 5 · ATTENTION ══════════════════════════════════ -->
+<div class="slide" id="s5">
+  <div class="inner">
+    <p class="eyebrow">Term 04 / 09</p>
+    <h2 class="term-h">Attention Mechanism</h2>
+    <p class="mono-tag">Attention(Q, K, V) = softmax(QKᵀ / √d) · V</p>
+    <p class="tagline">"Dynamically weighting which tokens matter for each other"</p>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p>Each token produces a <strong>Query (Q), Key (K), and Value (V)</strong> vector. Attention score = dot product of Q with every K, scaled and softmaxed into weights. Output = weighted sum of V vectors. Lets the model dynamically focus on relevant context.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like a <strong>dynamic correlation matrix updated per context</strong>. Q is "what am I looking for?", K is "what do I offer?", V is "what information do I carry?". Softmax weights ≈ normalized correlations. The model recomputes these weights for every new input.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      Attention solves the <strong>long-range dependency problem</strong>. Earlier models forgot context after ~100 tokens. Attention lets "stock" in position 1 directly inform "price" in position 500 with full weight — no decay. This is why LLMs handle long documents well.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 6 · PRE-TRAINING ═══════════════════════════════ -->
+<div class="slide" id="s6">
+  <div class="inner">
+    <p class="eyebrow">Term 05 / 09</p>
+    <h2 class="term-h">Pre-training</h2>
+    <p class="mono-tag">self-supervised learning on massive corpora</p>
+    <p class="tagline">"Learning world knowledge by predicting masked or next tokens"</p>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p>Training a model on a <strong>massive unlabeled corpus</strong> (trillions of tokens from web, books, code) using a self-supervised objective: predict the next token (GPT-style) or masked tokens (BERT-style). The model learns language, facts, and reasoning patterns with <strong>no human labels required</strong>.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like <strong>unsupervised factor discovery</strong> (PCA on returns) — the model finds latent structure without labeled outcomes. Or: training on all Bloomberg news ever published to learn "the grammar of finance" before fine-tuning on specific prediction tasks.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      Pre-training is <strong>astronomically expensive</strong> (GPT-4 estimated ~$100M+). Fine-tuning is cheap by comparison. This cost structure creates a natural separation: frontier labs bear pre-training costs; practitioners add value through fine-tuning and prompting.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 7 · FINE-TUNING / RLHF ════════════════════════ -->
+<div class="slide" id="s7">
+  <div class="inner">
+    <p class="eyebrow">Term 06 / 09</p>
+    <h2 class="term-h">Fine-tuning & RLHF</h2>
+    <p class="mono-tag">supervised adaptation + reinforcement learning from human feedback</p>
+    <p class="tagline">"Teaching the model to be helpful, harmless, and honest"</p>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p><strong>Fine-tuning</strong>: continuing training on a smaller, task-specific dataset to adapt a pre-trained model. <strong>RLHF</strong>: human raters rank model outputs; a reward model is trained on rankings; the LLM is updated via RL to maximize the reward — aligning outputs with human preferences.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like <strong>transfer learning in quant finance</strong>: start with a pre-trained macro model, fine-tune on your specific asset class. RLHF ≈ incorporating <strong>human expert judgment as a reward signal</strong> — similar to using analyst ratings to adjust model output rankings.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      RLHF transforms a raw next-token predictor into an <strong>assistant that follows instructions</strong>. Without it, the model would complete prompts literally ("List 3 stocks" → "1. Apple 2. Microsoft 3…") rather than helpfully. It is what makes ChatGPT feel like a chatbot, not a search engine.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 8 · TEMPERATURE / SAMPLING ════════════════════ -->
+<div class="slide" id="s8">
+  <div class="inner">
+    <p class="eyebrow">Term 07 / 09</p>
+    <h2 class="term-h">Temperature & Sampling</h2>
+    <p class="mono-tag">P'(token) ∝ P(token)^(1/T)</p>
+    <p class="tagline">"Controlling randomness in generation"</p>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p>At each step, the model outputs a <strong>probability distribution over all tokens</strong>. Temperature T scales the distribution: <strong>T → 0</strong> = greedy (always pick the highest probability token); <strong>T → 1</strong> = sample proportionally; <strong>T > 1</strong> = more uniform / random outputs.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like a <strong>risk aversion parameter</strong>. Low temperature = highly risk-averse decision maker who always picks the "safest" (most probable) option. High temperature = risk-seeking, explores low-probability outcomes. For financial analysis, use <strong>T ≈ 0</strong> for deterministic, reproducible outputs.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      Temperature is the <strong>single most important inference parameter</strong> for practitioners. T=0 for factual retrieval and analysis (reproducible). T=0.7–1.0 for brainstorming and drafting. <strong>Never use high temperature for compliance-sensitive financial outputs</strong> — variance is a liability.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 9 · PROMPT / CONTEXT ══════════════════════════ -->
+<div class="slide" id="s9">
+  <div class="inner">
+    <p class="eyebrow">Term 08 / 09</p>
+    <h2 class="term-h">Prompt Engineering</h2>
+    <p class="mono-tag">system prompt + few-shot examples + user query</p>
+    <p class="tagline">"The interface between human intent and model behaviour"</p>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p>Crafting the <strong>input text (prompt)</strong> to steer model outputs without changing weights. Techniques: <strong>zero-shot</strong> (instruction only), <strong>few-shot</strong> (instruction + examples), <strong>chain-of-thought</strong> (ask the model to reason step-by-step before answering). The system prompt sets persistent context.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like <strong>query construction in a Bloomberg function</strong>. The same terminal has different outputs depending on how you specify the function and parameters. Prompt engineering = knowing which {FIELD} and <MODIFIER> syntax yields useful data. <strong>Garbage in, garbage out</strong> applies equally.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      Chain-of-thought prompting ("think step by step") reliably improves accuracy on <strong>multi-step reasoning tasks</strong> — the model's intermediate tokens act as working memory. For financial calculations or logic chains, always elicit reasoning before the final answer.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 10 · HALLUCINATION / GROUNDING ════════════════ -->
+<div class="slide" id="s10">
+  <div class="inner">
+    <p class="eyebrow">Term 09 / 09</p>
+    <h2 class="term-h">Hallucination</h2>
+    <p class="mono-tag">confident generation without grounding</p>
+    <p class="tagline">"The model completes the pattern, whether true or not"</p>
+    <div class="two-col">
+      <div class="def-box cs">
+        <div class="def-label">▸ CS DEFINITION</div>
+        <p>An LLM generates text that is <strong>fluent and confident but factually wrong or fabricated</strong>. Root cause: next-token prediction optimizes for <em>plausibility</em>, not <em>truth</em>. The model has no internal truth-verification mechanism — it cannot distinguish remembered fact from plausible interpolation.</p>
+      </div>
+      <div class="def-box fin">
+        <div class="def-label">▸ FINANCE ANALOGY</div>
+        <p>Like an analyst who <strong>extrapolates a DCF model beyond the data</strong> — the output is internally consistent and well-formatted, but the inputs were fabricated. Or: a model that generates a <strong>plausible-looking ISIN or filing date that doesn't exist</strong>. Looks right; is wrong.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="ki-label">★ KEY INSIGHT</div>
+      Hallucination rate correlates with <strong>query specificity and data recency</strong>. LLMs are most reliable on common, well-documented facts; least reliable on specific numbers, dates, names, and recent events. Always <strong>verify quantitative claims</strong> from LLM outputs against primary sources — this is where RAG adds critical value.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 11 · SUMMARY ═══════════════════════════════════ -->
+<div class="slide" id="s11">
+  <div style="width:100%;max-width:900px;text-align:center;">
+    <p class="eyebrow">Summary</p>
+    <h2 class="term-h" style="font-size:clamp(22px,2.8vw,38px);margin-bottom:4px;">Nine terms to know</h2>
+    <p style="font-size:13px;color:var(--muted);">CS definition · Finance analogy</p>
+    <div class="sum-grid">
+      <div class="sum-card">
+        <div class="st">Language Model</div>
+        <div class="sc">P(next token | context)</div>
+        <div class="sf">AR/time-series forecaster</div>
+      </div>
+      <div class="sum-card">
+        <div class="st">Token</div>
+        <div class="sc">Sub-word text unit</div>
+        <div class="sf">Tick / price bar</div>
+      </div>
+      <div class="sum-card">
+        <div class="st">Parameters</div>
+        <div class="sc">Learned neural weights</div>
+        <div class="sf">Factor model coefficients</div>
+      </div>
+      <div class="sum-card">
+        <div class="st">Transformer</div>
+        <div class="sc">Self-attention architecture</div>
+        <div class="sf">Full covariance vs. AR(1)</div>
+      </div>
+      <div class="sum-card">
+        <div class="st">Attention</div>
+        <div class="sc">Q·K·V weighted lookup</div>
+        <div class="sf">Dynamic correlation matrix</div>
+      </div>
+      <div class="sum-card">
+        <div class="st">Pre-training</div>
+        <div class="sc">Self-supervised on large corpus</div>
+        <div class="sf">Unsupervised factor discovery</div>
+      </div>
+      <div class="sum-card">
+        <div class="st">Fine-tuning / RLHF</div>
+        <div class="sc">Task-specific adaptation</div>
+        <div class="sf">Transfer learning + human signal</div>
+      </div>
+      <div class="sum-card">
+        <div class="st">Temperature</div>
+        <div class="sc">Output randomness control</div>
+        <div class="sf">Risk aversion parameter</div>
+      </div>
+      <div class="sum-card wide">
+        <div class="st">Hallucination</div>
+        <div class="sc">Fluent but unsourced generation</div>
+        <div class="sf">Extrapolation beyond data / fabricated inputs</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<div id="hint"><kbd>←</kbd> <kbd>→</kbd> or click buttons</div>
+<div id="counter">1 / 12</div>
+<div id="nav">
+  <button id="btn-prev" disabled>← Prev</button>
+  <button id="btn-next">Next →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let cur = 0;
+  const progress = document.getElementById('progress');
+  const counter  = document.getElementById('counter');
+  const btnPrev  = document.getElementById('btn-prev');
+  const btnNext  = document.getElementById('btn-next');
+  function go(n) {
+    slides[cur].classList.remove('active');
+    cur = Math.max(0, Math.min(total - 1, n));
+    slides[cur].classList.add('active');
+    counter.textContent = `${cur + 1} / ${total}`;
+    progress.style.width = `${((cur + 1) / total) * 100}%`;
+    btnPrev.disabled = cur === 0;
+    btnNext.disabled = cur === total - 1;
+  }
+  btnNext.addEventListener('click', () => go(cur + 1));
+  btnPrev.addEventListener('click', () => go(cur - 1));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(cur + 1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                     { e.preventDefault(); go(cur - 1); }
+  });
+  go(0);
+</script>
+</body>
+</html>
