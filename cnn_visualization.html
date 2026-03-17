@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNN Architecture Lecture</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            color: #333;
+        }
+        #slide-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        .slide {
+            background: white;
+            width: 100%;
+            max-width: 1000px;
+            height: 600px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 50px;
+            display: none;
+            box-sizing: border-box;
+            animation: fadeIn 0.5s;
+        }
+        .slide.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 { color: #2c3e50; font-size: 2.5em; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #34495e; font-size: 1.8em; }
+        ul { font-size: 1.3em; line-height: 1.6; }
+        li { margin-bottom: 15px; }
+        .grid-container { display: flex; gap: 30px; margin-top: 30px; align-items: center; }
+        .grid { display: grid; gap: 4px; background: #ddd; padding: 4px; border-radius: 4px; }
+        .grid-5x5 { grid-template-columns: repeat(5, 50px); grid-template-rows: repeat(5, 50px); }
+        .grid-3x3 { grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); }
+        .cell { background: white; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2em; border-radius: 2px;}
+        .highlight { background: #3498db; color: white; }
+        
+        /* Table Styles */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 1.2em; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #2c3e50; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        #controls {
+            height: 80px;
+            background: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 50px;
+            color: white;
+        }
+        button {
+            padding: 10px 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        button:hover { background: #2980b9; }
+        button:disabled { background: #7f8c8d; cursor: not-allowed; }
+        .interactive-btn { background: #e67e22; margin-top: 20px; }
+        .interactive-btn:hover { background: #d35400; }
+    </style>
+</head>
+<body>
+
+<div id="slide-container">
+    
+    <div class="slide active">
+        <h1>Core Concepts of Convolutional Neural Networks (CNNs)</h1>
+        <p style="font-size: 1.5em; color: #7f8c8d;">Understanding the Architecture of Visual and Spatial Data Processing</p>
+        <div style="margin-top: 50px;">
+            <h2>The Three Foundational Inductive Biases</h2>
+            <ul>
+                <li><strong>Locality:</strong> Processing data in small, distinct patches.</li>
+                <li><strong>Parameter Sharing:</strong> Applying the exact same rules everywhere.</li>
+                <li><strong>Translation Equivariance:</strong> Recognizing patterns regardless of their spatial position.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="slide">
+        <h1>1. Locality & 2. Parameter Sharing</h1>
+        <div style="display: flex; gap: 40px;">
+            <div style="flex: 1;">
+                <ul>
+                    <li><strong>Local Receptive Fields:</strong> Each filter looks at a small patch (e.g., 3x3) of the input — not the entire image.</li>
+                    <li><strong>Weight Sharing:</strong> The exact same filter is slid across the entire input, dramatically reducing parameters.</li>
+                </ul>
+                <button class="interactive-btn" onclick="stepConvolution()">Step Filter Forward</button>
+            </div>
+            <div class="grid-container">
+                <div>
+                    <h3>Input Image (5x5)</h3>
+                    <div class="grid grid-5x5" id="input-grid">
+                        </div>
+                </div>
+                <div>
+                    <h3>Filter (3x3)</h3>
+                    <div class="grid grid-3x3">
+                        <div class="cell" style="background: #e74c3c; color: white;">1</div><div class="cell" style="background: #e74c3c; color: white;">0</div><div class="cell" style="background: #e74c3c; color: white;">-1</div>
+                        <div class="cell" style="background: #e74c3c; color: white;">1</div><div class="cell" style="background: #e74c3c; color: white;">0</div><div class="cell" style="background: #e74c3c; color: white;">-1</div>
+                        <div class="cell" style="background: #e74c3c; color: white;">1</div><div class="cell" style="background: #e74c3c; color: white;">0</div><div class="cell" style="background: #e74c3c; color: white;">-1</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide">
+        <h1>3. Translation Invariance & 4. Hierarchical Learning</h1>
+        <ul>
+            <li><strong>Translation Invariance:</strong> Because the same filter is applied everywhere, a pattern detected in the top-left will also be detected in the bottom-right. The network generalizes spatial positions.</li>
+            <li><strong>Compositional Representation:</strong>
+                <ul style="margin-top: 10px;">
+                    <li><em>Early layers:</em> Learn low-level features (edges, corners).</li>
+                    <li><em>Middle layers:</em> Learn mid-level patterns (textures, shapes).</li>
+                    <li><em>Deep layers:</em> Learn high-level semantics (faces, complete objects).</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="slide">
+        <h1>5. Pooling (Spatial Subsampling) & 6. Depth</h1>
+        <ul>
+            <li><strong>Pooling:</strong> Operations like Max or Average pooling reduce spatial dimensions.
+                <ul>
+                    <li>Provides spatial robustness (invariance to small distortions).</li>
+                    <li>Reduces computational load.</li>
+                    <li>Widens the receptive field in deeper layers.</li>
+                </ul>
+            </li>
+            <li><strong>Depth / Multi-channel Processing:</strong> Filters operate across all input channels (e.g., RGB) simultaneously, allowing the network to combine rich information.</li>
+        </ul>
+    </div>
+
+    <div class="slide">
+        <h1>Summary of CNN Capabilities</h1>
+        <table>
+            <tr>
+                <th>Concept</th>
+                <th>What it gives you</th>
+            </tr>
+            <tr>
+                <td><strong>Locality</strong></td>
+                <td>Efficient local pattern detection</td>
+            </tr>
+            <tr>
+                <td><strong>Parameter sharing</strong></td>
+                <td>Far fewer weights, better generalization</td>
+            </tr>
+            <tr>
+                <td><strong>Translation invariance</strong></td>
+                <td>Robust to position shifts</td>
+            </tr>
+            <tr>
+                <td><strong>Hierarchical features</strong></td>
+                <td>Compositional representation learning</td>
+            </tr>
+            <tr>
+                <td><strong>Pooling</strong></td>
+                <td>Spatial robustness + dimensionality reduction</td>
+            </tr>
+            <tr>
+                <td><strong>Depth/channels</strong></td>
+                <td>Rich, multi-scale feature combination</td>
+            </tr>
+        </table>
+    </div>
+
+</div>
+
+<div id="controls">
+    <button id="prevBtn" onclick="changeSlide(-1)" disabled>Previous</button>
+    <span id="slide-indicator" style="font-size: 1.2em;">Slide 1 / 5</span>
+    <button id="nextBtn" onclick="changeSlide(1)">Next</button>
+</div>
+
+<script>
+    // Slide Navigation Logic
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const indicator = document.getElementById('slide-indicator');
+
+    function changeSlide(direction) {
+        slides[currentSlide].classList.remove('active');
+        currentSlide += direction;
+        slides[currentSlide].classList.add('active');
+        
+        prevBtn.disabled = currentSlide === 0;
+        nextBtn.disabled = currentSlide === slides.length - 1;
+        indicator.innerText = `Slide ${currentSlide + 1} / ${slides.length}`;
+    }
+
+    // Interactive Convolution Logic
+    const inputGrid = document.getElementById('input-grid');
+    let convStep = 0;
+
+    // Build the 5x5 grid
+    for(let i=0; i<25; i++) {
+        let cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.innerText = Math.round(Math.random()); // Random 0 or 1
+        inputGrid.appendChild(cell);
+    }
+
+    function stepConvolution() {
+        const cells = inputGrid.children;
+        // Clear previous highlights
+        for(let cell of cells) cell.classList.remove('highlight');
+
+        // Calculate current row and col for a 3x3 sliding window in a 5x5 grid (9 total steps)
+        if (convStep > 8) convStep = 0; // Reset
+        
+        let row = Math.floor(convStep / 3);
+        let col = convStep % 3;
+
+        // Highlight the 3x3 area
+        for(let r=0; r<3; r++) {
+            for(let c=0; c<3; c++) {
+                let index = ((row + r) * 5) + (col + c);
+                cells[index].classList.add('highlight');
+            }
+        }
+        convStep++;
+    }
+</script>
+
+</body>
+</html>
