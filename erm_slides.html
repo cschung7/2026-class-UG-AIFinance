@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERM: RAG without Forgetting — 경제학 전공자를 위한 소개</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0d0f;
+    --bg2: #0f1419;
+    --bg3: #141c24;
+    --panel: #111820;
+    --border: #1e2d3d;
+    --amber: #e6a817;
+    --amber-dim: #8a650e;
+    --cyan: #4ec9b0;
+    --cyan-dim: #2d7a6c;
+    --red: #f44747;
+    --green: #4ec94e;
+    --blue: #569cd6;
+    --purple: #c586c0;
+    --text: #d4d4d4;
+    --text-dim: #6a8099;
+    --text-bright: #f0f0f0;
+    --accent: #e6a817;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 36px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 24px;
+    z-index: 100;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .topbar .ticker {
+    color: var(--amber);
+    font-weight: 500;
+  }
+  .topbar .sep { color: var(--border); }
+  .topbar .tag {
+    padding: 2px 8px;
+    background: rgba(230,168,23,0.12);
+    border: 1px solid var(--amber-dim);
+    border-radius: 2px;
+    color: var(--amber);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+  .topbar .right {
+    margin-left: auto;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: blink 1.6s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* ── SLIDE CONTAINER ── */
+  .slides-wrapper {
+    position: fixed;
+    inset: 36px 0 44px 0;
+    overflow: hidden;
+  }
+
+  .slides-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .slide {
+    min-width: 100%;
+    height: 100%;
+    padding: 40px 60px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* slide bg grid */
+  .slide::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(30,45,61,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,45,61,0.15) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  /* ── SLIDE HEADER ── */
+  .slide-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .slide-label span {
+    color: var(--amber);
+    margin-right: 8px;
+  }
+
+  h1.main-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 4.5vw, 58px);
+    color: var(--text-bright);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  h1.main-title em {
+    color: var(--amber);
+    font-style: italic;
+  }
+
+  h2.slide-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(24px, 3vw, 36px);
+    color: var(--text-bright);
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+  h2.slide-title .hl { color: var(--amber); }
+
+  .subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--cyan);
+    margin-bottom: 6px;
+  }
+
+  .desc {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    max-width: 680px;
+  }
+
+  /* ── DIVIDER ── */
+  .h-rule {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--amber) 0%, var(--border) 60%);
+    margin: 16px 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── CARDS / BOXES ── */
+  .card-row {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+    align-items: stretch;
+    position: relative;
+    z-index: 1;
+  }
+  .card {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .card.amber::before { background: var(--amber); }
+  .card.cyan::before { background: var(--cyan); }
+  .card.red::before { background: var(--red); }
+  .card.blue::before { background: var(--blue); }
+  .card.purple::before { background: var(--purple); }
+  .card.green::before { background: var(--green); }
+
+  .card-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--text-bright);
+    margin-bottom: 10px;
+  }
+  .card p, .card li {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .card ul { padding-left: 16px; }
+  .card li { margin-bottom: 4px; }
+  .card li strong { color: var(--text); }
+
+  /* ── MONO BOX (code-like) ── */
+  .mono-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    border-radius: 3px;
+    padding: 14px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--text);
+    line-height: 1.8;
+    position: relative;
+    z-index: 1;
+  }
+  .mono-box .kw { color: var(--blue); }
+  .mono-box .val { color: var(--amber); }
+  .mono-box .str { color: var(--cyan); }
+  .mono-box .cmt { color: var(--text-dim); font-style: italic; }
+  .mono-box .fn { color: var(--purple); }
+
+  /* ── TAG CHIPS ── */
+  .chip {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+  .chip.amber { background: rgba(230,168,23,0.15); border: 1px solid var(--amber-dim); color: var(--amber); }
+  .chip.cyan { background: rgba(78,201,176,0.12); border: 1px solid var(--cyan-dim); color: var(--cyan); }
+  .chip.red { background: rgba(244,71,71,0.12); border: 1px solid #7a3030; color: var(--red); }
+
+  /* ── ANALOGY BLOCK ── */
+  .analogy-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    position: relative;
+    z-index: 1;
+  }
+  .analogy-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--amber);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .analogy-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+    align-items: center;
+  }
+  .analogy-side {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .analogy-side .title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .analogy-arrow {
+    font-size: 22px;
+    color: var(--amber);
+    text-align: center;
+  }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    position: relative;
+    z-index: 1;
+    flex-wrap: nowrap;
+  }
+  .flow-node {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 12px;
+    text-align: center;
+    position: relative;
+  }
+  .flow-node.highlight {
+    border-color: var(--amber);
+    background: rgba(230,168,23,0.06);
+  }
+  .flow-node .node-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .flow-node .node-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+  }
+  .flow-node .node-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .flow-arrow {
+    width: 32px;
+    text-align: center;
+    color: var(--amber);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ── COMPARISON TABLE ── */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+  }
+  .comp-table th {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber);
+    text-align: left;
+  }
+  .comp-table td {
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    color: var(--text);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .comp-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .comp-table .bad { color: var(--red); }
+  .comp-table .good { color: var(--green); }
+  .comp-table .mid { color: var(--amber); }
+  .comp-table .erm-row td { background: rgba(230,168,23,0.05); border-color: var(--amber-dim); }
+
+  /* ── STAT BOXES ── */
+  .stat-row {
+    display: flex;
+    gap: 14px;
+    position: relative;
+    z-index: 1;
+  }
+  .stat-box {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-box .stat-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 34px;
+    color: var(--amber);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-box .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .stat-box .stat-sub {
+    font-size: 11px;
+    color: var(--cyan);
+    margin-top: 4px;
+  }
+
+  /* ── BOTTOM BAR ── */
+  .bottombar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 44px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    z-index: 100;
+  }
+  .nav-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  .progress-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 0 12px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--amber), var(--cyan));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+  .slide-counter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .slide-counter span { color: var(--amber); }
+
+  /* key shortcuts hint */
+  .key-hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    padding: 3px 7px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+  }
+
+  /* slide-specific tweaks */
+  .content-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+    position: relative;
+    z-index: 1;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    flex: 1;
+    position: relative;
+    z-index: 1;
+  }
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    flex: 1;
+    position: relative;
+    z-index: 1;
+  }
+
+  .inset-note {
+    background: rgba(78,201,176,0.06);
+    border: 1px solid var(--cyan-dim);
+    border-radius: 3px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    position: relative;
+    z-index: 1;
+  }
+  .inset-note strong { color: var(--cyan); }
+
+  /* title slide specific */
+  .title-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 2;
+    margin-top: 20px;
+    position: relative;
+    z-index: 1;
+  }
+  .title-meta .val { color: var(--amber); }
+
+  .big-tag {
+    display: inline-block;
+    background: rgba(230,168,23,0.08);
+    border: 1px solid var(--amber-dim);
+    border-radius: 2px;
+    padding: 4px 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+  }
+
+  .equation {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 12px 18px;
+    border-radius: 3px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+  .equation .eq-amber { color: var(--amber); }
+  .equation .eq-cyan { color: var(--cyan); }
+  .equation .eq-blue { color: var(--blue); }
+
+  /* slide-in animation */
+  .slide.active .card,
+  .slide.active .stat-box,
+  .slide.active .analogy-block,
+  .slide.active .mono-box,
+  .slide.active .flow,
+  .slide.active .inset-note {
+    animation: fadeUp 0.4s ease both;
+  }
+  .slide.active .card:nth-child(1) { animation-delay: 0.05s; }
+  .slide.active .card:nth-child(2) { animation-delay: 0.10s; }
+  .slide.active .card:nth-child(3) { animation-delay: 0.15s; }
+  .slide.active .stat-box:nth-child(1) { animation-delay: 0.05s; }
+  .slide.active .stat-box:nth-child(2) { animation-delay: 0.10s; }
+  .slide.active .stat-box:nth-child(3) { animation-delay: 0.15s; }
+  .slide.active .stat-box:nth-child(4) { animation-delay: 0.20s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="ticker">ERM</span>
+  <span class="sep">|</span>
+  <span>RAG without Forgetting</span>
+  <span class="sep">|</span>
+  <span class="tag">arXiv 2602.05152</span>
+  <span class="sep">|</span>
+  <span>Hu et al., Feb 2026</span>
+  <div class="right">
+    <div class="live-dot"></div>
+    <span>AI × Finance Lecture</span>
+  </div>
+</div>
+
+<!-- SLIDES -->
+<div class="slides-wrapper">
+<div class="slides-track" id="track">
+
+<!-- ══ SLIDE 0: TITLE ══ -->
+<div class="slide" id="slide-0">
+  <div class="slide-label"><span>00</span> OVERVIEW</div>
+  <h1 class="main-title">RAG without<br><em>Forgetting</em></h1>
+  <div class="h-rule"></div>
+  <div class="desc" style="position:relative;z-index:1;">
+    Continual Query-Infused Key Memory (ERM) — 쿼리를 쓸 수록 검색이 똑똑해지는 RAG
+  </div>
+  <div class="title-meta">
+    <div>PAPER &nbsp;&nbsp;&nbsp; <span class="val">arXiv: 2602.05152</span></div>
+    <div>AUTHORS <span class="val">Yuntong Hu · Sha Li · Naren Ramakrishnan · Liang Zhao</span></div>
+    <div>DATE &nbsp;&nbsp;&nbsp;&nbsp; <span class="val">February 5, 2026</span></div>
+    <div>VENUE &nbsp;&nbsp;&nbsp; <span class="val">BEIR + BRIGHT Benchmark (13 domains)</span></div>
+  </div>
+  <div style="margin-top:auto;position:relative;z-index:1;display:flex;gap:10px;flex-wrap:wrap;">
+    <span class="chip amber">Retrieval-Augmented Generation</span>
+    <span class="chip cyan">Continual Learning</span>
+    <span class="chip amber">Training-Free</span>
+    <span class="chip cyan">Memory Evolution</span>
+  </div>
+</div>
+
+<!-- ══ SLIDE 1: MOTIVATION ══ -->
+<div class="slide" id="slide-1">
+  <div class="slide-label"><span>01</span> WHY THIS PAPER?</div>
+  <h2 class="slide-title">기존 RAG의 <span class="hl">근본적 한계</span></h2>
+  <div class="h-rule"></div>
+  <div class="content-col">
+    <div class="analogy-block">
+      <div class="analogy-label">💡 경제학 analogie — 시장 미시구조</div>
+      <div class="analogy-grid">
+        <div class="analogy-side">
+          <div class="title">기존 RAG 시스템</div>
+          매번 주문이 들어올 때마다 호가창을 새로 분석하고 전략을 세우지만, <strong>이전 거래에서 배운 것은 아무것도 기억하지 않는다.</strong><br>
+          → 오늘 체결된 패턴이 내일의 전략에 반영되지 않음
+        </div>
+        <div class="analogy-arrow">⟶</div>
+        <div class="analogy-side">
+          <div class="title">ERM이 추구하는 것</div>
+          거래가 쌓일수록 시스템이 <strong>어떤 쿼리-문서 조합이 정답을 냈는지를 인덱스에 누적</strong>해 기억.<br>
+          → 반복 패턴이 있는 쿼리는 추가 비용 없이 더 정확하게 검색
+        </div>
+      </div>
+    </div>
+    <div class="card-row" style="flex:0;gap:14px;">
+      <div class="card red">
+        <div class="card-label">문제 1</div>
+        <div class="card-title">Stateless 반복 비용</div>
+        <p>Query expansion이나 iterative retrieval은 매번 새로 계산. 같은 쿼리 패턴이 반복돼도 누적 학습 없음. <strong>inference cost가 linearly 발생.</strong></p>
+      </div>
+      <div class="card red">
+        <div class="card-label">문제 2</div>
+        <div class="card-title">Index-side Drift</div>
+        <p>Key expansion은 오프라인 전처리에 의존. Heuristic 업데이트는 <strong>downstream utility와 정렬 약함</strong> → semantic drift + 노이즈 누적.</p>
+      </div>
+      <div class="card amber">
+        <div class="card-label">핵심 통찰</div>
+        <div class="card-title">Zipf 분포 활용</div>
+        <p>실세계 쿼리는 <strong>Zipf 분포</strong>를 따름 — 소수의 문서에 트래픽 집중. 모든 key를 업데이트할 필요 없이 <strong>선택적 lazy update</strong>로 충분.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 2: THREE PARADIGMS ══ -->
+<div class="slide" id="slide-2">
+  <div class="slide-label"><span>02</span> METHODOLOGY</div>
+  <h2 class="slide-title">세 가지 <span class="hl">패러다임</span> 비교</h2>
+  <div class="h-rule"></div>
+  <div class="content-col">
+    <div class="three-col" style="flex:0;">
+      <div class="card cyan">
+        <div class="card-label">Paradigm A</div>
+        <div class="card-title">Query Expansion (QE)</div>
+        <ul>
+          <li>쿼리를 inference-time에 확장</li>
+          <li>문서 공간에 정렬시킴</li>
+          <li><strong>단점: 매 query 후 버려짐</strong></li>
+          <li>누적 학습 불가</li>
+        </ul>
+      </div>
+      <div class="card blue">
+        <div class="card-label">Paradigm B</div>
+        <div class="card-title">Key Expansion (KE)</div>
+        <ul>
+          <li>문서 key를 쿼리 공간에 맞춰 오프라인 보강</li>
+          <li>Persistence는 있음</li>
+          <li><strong>단점: 높은 전처리 비용</strong></li>
+          <li>Semantic drift, 노이즈 누적</li>
+        </ul>
+      </div>
+      <div class="card amber">
+        <div class="card-label">Paradigm C — ERM</div>
+        <div class="card-title">Evolving Retrieval Memory</div>
+        <ul>
+          <li>QE의 순간적 이득을 index에 영구 반영</li>
+          <li>정답 검증된 신호만 선택 반영</li>
+          <li><strong>Zero inference-time overhead</strong></li>
+          <li>수렴 이론 증명됨</li>
+        </ul>
+      </div>
+    </div>
+    <div class="inset-note">
+      <strong>이론적 등가성 (Key theorem):</strong> 논문은 표준 similarity 함수 하에서 <strong>query expansion ≡ key expansion</strong>임을 수학적으로 증명. 즉 ERM은 optimal query expansion의 이득을 index에 amortize할 수 있음이 보장됨.
+    </div>
+    <div class="equation">
+      sim(<span class="eq-cyan">q_expanded</span>, k) = sim(q, <span class="eq-amber">k_expanded</span>)
+      &nbsp;&nbsp;<span style="color:var(--text-dim)">// under standard inner-product similarity</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 3: ERM MECHANISM ══ -->
+<div class="slide" id="slide-3">
+  <div class="slide-label"><span>03</span> ERM ARCHITECTURE</div>
+  <h2 class="slide-title">ERM의 <span class="hl">3가지 핵심 메커니즘</span></h2>
+  <div class="h-rule"></div>
+  <div class="content-col">
+    <div class="flow">
+      <div class="flow-node">
+        <div class="node-label">Step 1</div>
+        <div class="node-title">Query 처리</div>
+        <div class="node-sub">Query expansion으로<br>후보 문서 검색</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node highlight">
+        <div class="node-label">Step 2 — 핵심</div>
+        <div class="node-title">Correctness Gate</div>
+        <div class="node-sub">LLM 응답의 정답 여부로<br>신호 품질 검증</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node highlight">
+        <div class="node-label">Step 3 — 핵심</div>
+        <div class="node-title">Atomic Attribution</div>
+        <div class="node-sub">검증된 신호를<br>기여한 key에만 귀속</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node highlight">
+        <div class="node-label">Step 4 — 핵심</div>
+        <div class="node-title">Norm-Bounded Update</div>
+        <div class="node-sub">수렴 보장된 bounded<br>점진적 key 업데이트</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="node-label">결과</div>
+        <div class="node-title">진화된 Index</div>
+        <div class="node-sub">다음 유사 쿼리는<br>추가 비용 없이 정확</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="analogy-block">
+        <div class="analogy-label">🏦 경제학 analogie — 중앙은행 정책 학습</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.7;">
+          <strong style="color:var(--amber)">Correctness Gate</strong>는 중앙은행이 "이 금리 결정이 인플레이션 목표에 맞았는가?"를 사후 검증하는 것.<br><br>
+          <strong style="color:var(--cyan)">Atomic Attribution</strong>은 특정 지표(실업률, CPI)가 그 결과에 얼마나 기여했는지 분리 귀속.<br><br>
+          <strong style="color:var(--blue)">Norm-Bounded Update</strong>는 급격한 정책 변화 없이 안정적으로 모델을 업데이트하는 점진적 조정.
+        </div>
+      </div>
+      <div class="mono-box">
+<span class="cmt"># ERM pseudo-logic</span>
+<br><span class="kw">for</span> query <span class="kw">in</span> incoming_queries:
+<br>&nbsp;&nbsp;result = <span class="fn">rag_pipeline</span>(query)
+<br>&nbsp;&nbsp;<span class="kw">if</span> <span class="fn">correctness_gate</span>(result):
+<br>&nbsp;&nbsp;&nbsp;&nbsp;signals = <span class="fn">expand</span>(query)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> key <span class="kw">in</span> <span class="fn">attributed</span>(signals):
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;key += <span class="fn">bounded_update</span>(signal)
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt"># ‖Δkey‖ ≤ ε  (수렴 보장)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 4: COMPARISON TABLE ══ -->
+<div class="slide" id="slide-4">
+  <div class="slide-label"><span>04</span> COMPARISON</div>
+  <h2 class="slide-title">기존 방법론과의 <span class="hl">체계적 비교</span></h2>
+  <div class="h-rule"></div>
+  <div class="content-col">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>방법론</th>
+          <th>Persistence</th>
+          <th>Inference Cost</th>
+          <th>Noise / Drift</th>
+          <th>Task Alignment</th>
+          <th>Training 필요</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Standard RAG</strong></td>
+          <td class="bad">없음 (stateless)</td>
+          <td class="mid">중간</td>
+          <td class="good">낮음</td>
+          <td class="mid">중간</td>
+          <td class="good">불필요</td>
+        </tr>
+        <tr>
+          <td><strong>Query Expansion</strong></td>
+          <td class="bad">없음 (버려짐)</td>
+          <td class="bad">높음 (매번)</td>
+          <td class="good">낮음</td>
+          <td class="good">높음</td>
+          <td class="good">불필요</td>
+        </tr>
+        <tr>
+          <td><strong>Key Expansion</strong></td>
+          <td class="good">있음 (오프라인)</td>
+          <td class="good">낮음</td>
+          <td class="bad">높음 (drift)</td>
+          <td class="bad">낮음</td>
+          <td class="mid">전처리 필요</td>
+        </tr>
+        <tr>
+          <td><strong>Fine-tuning RAG</strong></td>
+          <td class="good">있음</td>
+          <td class="good">낮음</td>
+          <td class="mid">중간</td>
+          <td class="good">높음</td>
+          <td class="bad">필요 (비용↑)</td>
+        </tr>
+        <tr class="erm-row">
+          <td><strong style="color:var(--amber)">ERM (제안)</strong></td>
+          <td class="good">있음 (점진적 진화)</td>
+          <td class="good">원래와 동일</td>
+          <td class="good">낮음 (gate 검증)</td>
+          <td class="good">높음 (task-validated)</td>
+          <td class="good">불필요</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="inset-note">
+      <strong>핵심 우위:</strong> ERM은 기존 RAG 파이프라인을 <em>수정 없이</em> 위에 얹는 레이어. Persistence와 Task Alignment를 동시에 달성하면서 Training-Free인 유일한 방법.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 5: THEORY ══ -->
+<div class="slide" id="slide-5">
+  <div class="slide-label"><span>05</span> THEORETICAL FOUNDATION</div>
+  <h2 class="slide-title">왜 <span class="hl">수학적으로 작동</span>하는가?</h2>
+  <div class="h-rule"></div>
+  <div class="content-col">
+    <div class="two-col">
+      <div class="card amber">
+        <div class="card-label">Theorem 1 — 등가성</div>
+        <div class="card-title">QE ≡ KE</div>
+        <p>표준 inner-product similarity 하에서 query를 확장하는 것과 key를 확장하는 것은 <strong>수학적으로 동치</strong>. 이는 ERM이 query-time 이득을 index에 amortize할 수 있는 이론적 근거.</p>
+      </div>
+      <div class="card cyan">
+        <div class="card-label">Theorem 2 — 수렴</div>
+        <div class="card-title">Bounded Update Convergence</div>
+        <p>Selective + norm-bounded 업데이트는 <strong>수렴이 증명됨</strong>. Key가 무한히 drift하지 않고 최적 상태로 안정적으로 수렴. Catastrophic forgetting 없음.</p>
+      </div>
+    </div>
+    <div class="analogy-block">
+      <div class="analogy-label">📊 경제학 analogie — 오차수정모형 (ECM)</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.7;">
+        ERM의 수렴 증명은 계량경제학의 <strong style="color:var(--amber)">오차수정모형(Error Correction Model)</strong>과 구조적으로 유사합니다.<br><br>
+        ECM에서 장기 균형에서 이탈하면 단기 조정이 발생해 균형으로 복귀하듯, ERM의 norm-bounded update는 <strong style="color:var(--cyan)">현재 key 상태에서의 편차를 제한</strong>하면서 점진적으로 optimal retrieval 상태로 수렴합니다.<br><br>
+        수식: <span style="font-family:'IBM Plex Mono',monospace;color:var(--amber);">‖key_{t+1} - key_t‖ ≤ ε</span> &nbsp;→ Lyapunov stability 조건 만족
+      </div>
+    </div>
+    <div class="equation">
+      <span class="eq-blue">Δkey</span> = <span class="eq-amber">α · P(correct | query, key)</span> · <span class="eq-cyan">attribution(signal → key)</span>
+      &nbsp;&nbsp;<span style="color:var(--text-dim)">// Correctness-weighted selective update</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 6: RESULTS ══ -->
+<div class="slide" id="slide-6">
+  <div class="slide-label"><span>06</span> EMPIRICAL RESULTS</div>
+  <h2 class="slide-title">BEIR · BRIGHT — <span class="hl">13개 도메인</span> 실험 결과</h2>
+  <div class="h-rule"></div>
+  <div class="content-col">
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-val">13</div>
+        <div class="stat-label">Domains Tested</div>
+        <div class="stat-sub">BEIR + BRIGHT</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">↑</div>
+        <div class="stat-label">Consistent Gains</div>
+        <div class="stat-sub">모든 도메인 향상</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">0×</div>
+        <div class="stat-label">Inference Overhead</div>
+        <div class="stat-sub">추가 비용 없음</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">↑↑</div>
+        <div class="stat-label">Reasoning Tasks</div>
+        <div class="stat-sub">추론 집약 태스크 특히 강함</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card green">
+        <div class="card-label">Strong Results</div>
+        <div class="card-title">Reasoning-Intensive Tasks</div>
+        <ul>
+          <li>단순 fact retrieval보다 <strong>복잡한 추론 태스크에서 더 큰 향상</strong></li>
+          <li>BRIGHT 벤치마크(추론 중심) 특히 두드러짐</li>
+          <li>Multi-hop 쿼리 처리 개선</li>
+          <li>반복 쿼리 패턴에서 amortized 이득 실현</li>
+        </ul>
+      </div>
+      <div class="card blue">
+        <div class="card-label">Evaluation Setup</div>
+        <div class="card-title">다양한 설정에서 검증</div>
+        <ul>
+          <li>Multiple retriever 아키텍처 적용</li>
+          <li>다양한 indexing 전략과 조합</li>
+          <li>Retrieval + Generation 모두 평가</li>
+          <li>Native retrieval speed 유지 확인</li>
+        </ul>
+      </div>
+    </div>
+    <div class="inset-note">
+      <strong>실용적 의미:</strong> 기존 RAG 스택을 교체하지 않고 <em>위에 ERM 레이어만 추가</em>해도 점진적 성능 향상이 발생. 특히 반복 쿼리가 많은 엔터프라이즈 환경(법률, 금융, 연구)에서 효과 극대화.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 7: APPLICATIONS ══ -->
+<div class="slide" id="slide-7">
+  <div class="slide-label"><span>07</span> APPLICATIONS</div>
+  <h2 class="slide-title">경제·금융 분야 <span class="hl">적용 시나리오</span></h2>
+  <div class="h-rule"></div>
+  <div class="content-col">
+    <div class="three-col">
+      <div class="card amber">
+        <div class="card-label">Scenario A</div>
+        <div class="card-title">연구 리포트 인텔리전스</div>
+        <p>증권사 리서치 리포트 DB에 ERM 적용. 애널리스트가 반복적으로 조회하는 섹터/기업 쿼리가 쌓일수록 <strong>관련 문서 키가 자동 강화</strong>. NBER 논문 검색 시스템에 직접 적용 가능.</p>
+      </div>
+      <div class="card cyan">
+        <div class="card-label">Scenario B</div>
+        <div class="card-title">금융 Q&A 어시스턴트</div>
+        <p>"PER이 낮은 반도체 섹터 기업 찾아줘" 같은 복잡한 멀티홉 쿼리. 첫 응답이 정확할수록 관련 인덱스 키가 강화되어 <strong>유사 쿼리 반응속도 향상</strong>.</p>
+      </div>
+      <div class="card purple">
+        <div class="card-label">Scenario C</div>
+        <div class="card-title">규제·컴플라이언스 검색</div>
+        <p>법규, 공시, 규제 문서 베이스. 컴플라이언스 담당자의 반복 질의 패턴이 index에 축적되어 <strong>희귀하지만 중요한 조항도 정확하게 검색</strong>.</p>
+      </div>
+    </div>
+    <div class="analogy-block">
+      <div class="analogy-label">🧠 학습 포인트 — RAG vs Fine-tuning vs ERM의 포지셔닝</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;font-size:13px;color:var(--text);">
+        <div>
+          <strong style="color:var(--text-dim)">Fine-tuning</strong><br>
+          모델 파라미터 수정. 대용량 도메인 데이터 필요. 비용 높음. 재학습 주기 느림.
+        </div>
+        <div>
+          <strong style="color:var(--blue)">Standard RAG</strong><br>
+          정적 인덱스. 빠른 배포. 하지만 쿼리에서 배우지 않음. 반복 쿼리에도 동일 비용.
+        </div>
+        <div>
+          <strong style="color:var(--amber)">ERM</strong><br>
+          인덱스가 쿼리로부터 학습. 추가 학습 비용 없음. 시간이 지날수록 성능 향상.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 8: LIMITATIONS ══ -->
+<div class="slide" id="slide-8">
+  <div class="slide-label"><span>08</span> LIMITATIONS & FUTURE WORK</div>
+  <h2 class="slide-title">한계와 <span class="hl">열린 연구 방향</span></h2>
+  <div class="h-rule"></div>
+  <div class="content-col">
+    <div class="two-col">
+      <div>
+        <div class="card red" style="margin-bottom:14px;">
+          <div class="card-label">Limitation 1</div>
+          <div class="card-title">Correctness 판단 의존성</div>
+          <p>정답/오답을 판단하는 verifier의 품질에 전체 시스템이 의존. 검증이 어려운 오픈엔드 질문(예: "최적 금리는?")에는 gate 설계가 복잡해짐.</p>
+        </div>
+        <div class="card red">
+          <div class="card-label">Limitation 2</div>
+          <div class="card-title">Cold Start 문제</div>
+          <p>초기 쿼리가 적을 때는 일반 RAG와 동일. Zipf 분포의 이점이 실현되려면 <strong>충분한 쿼리 누적</strong>이 필요. 트래픽이 적은 도메인에서는 이득이 제한적.</p>
+        </div>
+      </div>
+      <div>
+        <div class="card amber" style="margin-bottom:14px;">
+          <div class="card-label">Future Direction 1</div>
+          <div class="card-title">Multi-modal ERM</div>
+          <p>현재는 텍스트 전용. 금융 차트, 테이블, 이미지가 포함된 리서치 리포트에 적용하려면 멀티모달 key 업데이트 메커니즘 필요.</p>
+        </div>
+        <div class="card cyan">
+          <div class="card-label">Future Direction 2</div>
+          <div class="card-title">Federated ERM</div>
+          <p>여러 기관이 쿼리 데이터를 공유하지 않고도 인덱스 경험을 federated 방식으로 축적. 금융기관 간 <strong>privacy-preserving 협력 학습</strong> 가능성.</p>
+        </div>
+      </div>
+    </div>
+    <div class="inset-note">
+      <strong>비판적 시각:</strong> ERM의 이론적 수렴 보장은 convex 조건 가정. 실제 고차원 임베딩 공간에서의 non-convexity, 분포 시프트, adversarial 쿼리에 대한 robustness는 추가 연구 필요.
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLIDE 9: SUMMARY ══ -->
+<div class="slide" id="slide-9">
+  <div class="slide-label"><span>09</span> SUMMARY</div>
+  <h2 class="slide-title">핵심 <span class="hl">3-Line Summary</span></h2>
+  <div class="h-rule"></div>
+  <div class="content-col">
+    <div class="mono-box" style="font-size:14px;line-height:2.2;">
+      <span class="kw">PROBLEM</span> &nbsp;&nbsp;<span class="str">"기존 RAG는 쿼리마다 처음부터 다시 — 누적 학습이 없다"</span><br>
+      <span class="kw">METHOD &nbsp;</span> &nbsp;<span class="val">"정답 검증된 쿼리의 expansion 신호를 index key에 점진적으로 귀속"</span><br>
+      <span class="kw">RESULT &nbsp;</span> &nbsp;<span class="fn">"추가 비용 없이, 쓸수록 검색이 정확해지는 자기진화 RAG"</span>
+    </div>
+    <div class="three-col" style="flex:0;">
+      <div class="card amber">
+        <div class="card-label">Key Concept 1</div>
+        <div class="card-title">Correctness-Gated</div>
+        <p>정답이 확인된 쿼리의 신호만 반영 → noise 억제</p>
+      </div>
+      <div class="card cyan">
+        <div class="card-label">Key Concept 2</div>
+        <div class="card-title">Atomic Attribution</div>
+        <p>기여한 key에만 선택적 귀속 → drift 방지</p>
+      </div>
+      <div class="card blue">
+        <div class="card-label">Key Concept 3</div>
+        <div class="card-title">Norm-Bounded</div>
+        <p>수렴 보장 업데이트 → 안정성 확보</p>
+      </div>
+    </div>
+    <div class="analogy-block">
+      <div class="analogy-label">🎓 Take-away for 경제학 전공자</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.8;">
+        ERM은 <strong style="color:var(--amber)">베이지안 업데이트</strong>의 AI 버전으로 이해할 수 있습니다. 사전 확률(기존 index key) + 데이터 likelihood(검증된 쿼리 신호) → 사후 확률(업데이트된 key). 단, 업데이트가 norm-bounded이므로 <strong style="color:var(--cyan)">과잉반응(overreaction) 없는 합리적 기대 형성</strong>에 가깝습니다.
+        &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+        <strong>arXiv: 2602.05152</strong> &nbsp;·&nbsp; Hu et al., Feb 2026
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /slides-track -->
+</div><!-- /slides-wrapper -->
+
+<!-- BOTTOM BAR -->
+<div class="bottombar">
+  <button class="nav-btn" onclick="prevSlide()">← PREV</button>
+  <button class="nav-btn" onclick="nextSlide()">NEXT →</button>
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+  <div class="slide-counter">SLIDE <span id="cur">01</span> / <span id="tot">10</span></div>
+  <div class="key-hint">← →</div>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const track = document.getElementById('track');
+  const progressFill = document.getElementById('progress');
+  const curEl = document.getElementById('cur');
+  const totEl = document.getElementById('tot');
+  let current = 0;
+  const total = slides.length;
+  totEl.textContent = String(total).padStart(2,'0');
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, total - 1));
+    track.style.transform = `translateX(-${current * 100}%)`;
+    progressFill.style.width = `${((current+1)/total)*100}%`;
+    curEl.textContent = String(current+1).padStart(2,'0');
+    setTimeout(() => slides[current].classList.add('active'), 100);
+  }
+
+  function nextSlide() { goTo(current + 1); }
+  function prevSlide() { goTo(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevSlide();
+  });
+
+  // touch swipe
+  let touchX = 0;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (dx < -50) nextSlide();
+    if (dx >  50) prevSlide();
+  });
+
+  goTo(0);
+</script>
+</body>
+</html>

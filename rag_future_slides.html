@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG의 현재와 미래 — HW·SW 혁신의 충격</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #06080a;
+  --bg2:      #0c1018;
+  --bg3:      #101520;
+  --panel:    #0e1520;
+  --border:   #1c2840;
+  --border2:  #243350;
+  --amber:    #f0a500;
+  --amber2:   #c07800;
+  --amber-bg: rgba(240,165,0,0.08);
+  --cyan:     #38d9c0;
+  --cyan2:    #1f9e8c;
+  --cyan-bg:  rgba(56,217,192,0.07);
+  --blue:     #4d9de0;
+  --blue-bg:  rgba(77,157,224,0.07);
+  --red:      #e05c5c;
+  --green:    #4dc98a;
+  --purple:   #b48ef0;
+  --text:     #c8d4e0;
+  --text2:    #7a92aa;
+  --text3:    #3d5570;
+  --bright:   #eef4ff;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* scanlines */
+body::after {
+  content:'';
+  position:fixed;inset:0;
+  background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px);
+  pointer-events:none;z-index:9999;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  position:fixed;top:0;left:0;right:0;height:38px;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;gap:16px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--text2);z-index:200;
+}
+.topbar .brand { color:var(--amber);font-weight:600;letter-spacing:.06em; }
+.topbar .pipe  { color:var(--border2); }
+.topbar .tag {
+  padding:2px 9px;border-radius:2px;font-size:10px;letter-spacing:.08em;
+  background:var(--amber-bg);border:1px solid var(--amber2);color:var(--amber);
+}
+.topbar .tag.cyan {
+  background:var(--cyan-bg);border-color:var(--cyan2);color:var(--cyan);
+}
+.topbar .right { margin-left:auto;display:flex;gap:14px;align-items:center; }
+.dot { width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(77,201,138,.4)}50%{opacity:.6;box-shadow:0 0 0 5px rgba(77,201,138,0)}}
+
+/* ── SLIDES ── */
+.wrap { position:fixed;inset:38px 0 46px 0;overflow:hidden; }
+.track {
+  display:flex;height:100%;
+  transition:transform .55s cubic-bezier(.77,0,.18,1);
+}
+.slide {
+  min-width:100%;height:100%;
+  padding:44px 64px 32px;
+  display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+}
+
+/* dot grid bg */
+.slide::before {
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle, rgba(28,40,64,.9) 1px, transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;
+}
+
+/* ── TYPOGRAPHY ── */
+.slide-num {
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:var(--text3);
+  letter-spacing:.18em;text-transform:uppercase;
+  margin-bottom:6px;position:relative;z-index:1;
+}
+.slide-num span { color:var(--amber); }
+
+h1 {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(32px,4.2vw,54px);
+  font-weight:800;
+  color:var(--bright);
+  line-height:1.05;
+  margin-bottom:8px;
+  position:relative;z-index:1;
+}
+h1 em { color:var(--amber);font-style:normal; }
+h1 .c { color:var(--cyan); }
+
+h2 {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(22px,2.8vw,34px);
+  font-weight:700;color:var(--bright);
+  line-height:1.15;margin-bottom:16px;
+  position:relative;z-index:1;
+}
+h2 .hl { color:var(--amber); }
+h2 .hlc { color:var(--cyan); }
+
+.rule {
+  width:100%;height:1px;
+  background:linear-gradient(90deg, var(--amber) 0%, var(--border) 55%);
+  margin-bottom:18px;position:relative;z-index:1;
+}
+
+/* ── LAYOUT HELPERS ── */
+.z { position:relative;z-index:1; }
+.col  { display:flex;flex-direction:column;gap:14px;flex:1; }
+.row  { display:flex;gap:14px; }
+.g2   { display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1; }
+.g3   { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;flex:1; }
+.g32  { display:grid;grid-template-columns:1.6fr 1fr;gap:14px;flex:1; }
+
+/* ── CARD ── */
+.card {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:18px 20px;
+  position:relative;overflow:hidden;
+}
+.card::before { content:'';position:absolute;top:0;left:0;right:0;height:2px; }
+.card.a::before{background:var(--amber);}
+.card.c::before{background:var(--cyan);}
+.card.b::before{background:var(--blue);}
+.card.r::before{background:var(--red);}
+.card.g::before{background:var(--green);}
+.card.p::before{background:var(--purple);}
+
+.card-tag {
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;color:var(--text3);
+  letter-spacing:.14em;text-transform:uppercase;
+  margin-bottom:6px;
+}
+.card-title {
+  font-family:'Syne',sans-serif;
+  font-size:16px;font-weight:600;
+  color:var(--bright);margin-bottom:8px;
+}
+.card p, .card li {
+  font-size:12.5px;color:var(--text2);line-height:1.7;
+}
+.card ul { padding-left:14px; }
+.card li { margin-bottom:3px; }
+.card li strong { color:var(--text); }
+
+/* ── MONO BOX ── */
+.mono {
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;line-height:1.9;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-left:3px solid var(--amber);
+  border-radius:4px;
+  padding:14px 18px;
+  color:var(--text);
+  position:relative;z-index:1;
+}
+.mono .k  { color:var(--blue); }
+.mono .v  { color:var(--amber); }
+.mono .s  { color:var(--cyan); }
+.mono .cm { color:var(--text3);font-style:italic; }
+.mono .fn { color:var(--purple); }
+.mono .g  { color:var(--green); }
+
+/* ── STAT ── */
+.stats { display:flex;gap:12px;position:relative;z-index:1; }
+.stat {
+  flex:1;background:var(--panel);
+  border:1px solid var(--border);border-radius:6px;
+  padding:16px;text-align:center;
+}
+.stat-val {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(28px,3.5vw,42px);
+  font-weight:800;color:var(--amber);
+  line-height:1;margin-bottom:4px;
+}
+.stat-val.c { color:var(--cyan); }
+.stat-val.g { color:var(--green); }
+.stat-val.b { color:var(--blue); }
+.stat-label {
+  font-family:'JetBrains Mono',monospace;
+  font-size:9.5px;color:var(--text3);
+  letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:3px;
+}
+.stat-sub { font-size:11px;color:var(--text2); }
+
+/* ── TIMELINE ── */
+.timeline { display:flex;flex-direction:column;gap:0;position:relative;z-index:1; }
+.tl-item {
+  display:grid;grid-template-columns:120px 32px 1fr;
+  gap:0;align-items:stretch;
+  min-height:64px;
+}
+.tl-date {
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--amber);
+  padding:12px 12px 12px 0;
+  display:flex;align-items:flex-start;justify-content:flex-end;
+  border-right:none;
+}
+.tl-spine {
+  display:flex;flex-direction:column;align-items:center;
+  position:relative;
+}
+.tl-dot {
+  width:12px;height:12px;border-radius:50%;
+  margin-top:14px;flex-shrink:0;
+  border:2px solid var(--amber);
+  background:var(--bg);
+  position:relative;z-index:2;
+}
+.tl-dot.c { border-color:var(--cyan); }
+.tl-dot.g { border-color:var(--green); }
+.tl-dot.b { border-color:var(--blue); }
+.tl-dot.filled { background:var(--amber); }
+.tl-dot.filled.c { background:var(--cyan);border-color:var(--cyan); }
+.tl-line {
+  flex:1;width:2px;background:var(--border);
+  margin-top:2px;
+}
+.tl-content {
+  padding:10px 0 10px 16px;
+}
+.tl-title {
+  font-family:'Syne',sans-serif;
+  font-size:14px;font-weight:600;color:var(--bright);
+  margin-bottom:3px;
+}
+.tl-desc { font-size:12px;color:var(--text2);line-height:1.6; }
+.tl-chip {
+  display:inline-block;padding:1px 8px;border-radius:2px;
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  letter-spacing:.06em;margin-left:8px;vertical-align:middle;
+}
+.tl-chip.a { background:var(--amber-bg);border:1px solid var(--amber2);color:var(--amber); }
+.tl-chip.c { background:var(--cyan-bg);border:1px solid var(--cyan2);color:var(--cyan); }
+.tl-chip.b { background:var(--blue-bg);border:1px solid #2d6099;color:var(--blue); }
+
+/* ── TABLE ── */
+.tbl { width:100%;border-collapse:collapse;font-size:12.5px;position:relative;z-index:1; }
+.tbl th {
+  background:var(--bg3);border:1px solid var(--border);
+  padding:9px 14px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--amber);text-align:left;
+}
+.tbl td {
+  border:1px solid var(--border);
+  padding:9px 14px;color:var(--text2);
+  vertical-align:top;line-height:1.55;
+}
+.tbl tr:hover td { background:rgba(255,255,255,.02); }
+.tbl .bad  { color:var(--red); }
+.tbl .good { color:var(--green); }
+.tbl .mid  { color:var(--amber); }
+.tbl .hl-row td { background:rgba(240,165,0,.05);border-color:var(--amber2); }
+
+/* ── NOTE ── */
+.note {
+  background:var(--cyan-bg);
+  border:1px solid var(--cyan2);
+  border-radius:4px;padding:12px 16px;
+  font-size:12.5px;color:var(--text2);line-height:1.65;
+  position:relative;z-index:1;
+}
+.note strong { color:var(--cyan); }
+.note.a {
+  background:var(--amber-bg);border-color:var(--amber2);
+}
+.note.a strong { color:var(--amber); }
+
+/* ── FLOW ── */
+.flow { display:flex;align-items:center;gap:0;position:relative;z-index:1; }
+.fn {
+  flex:1;background:var(--panel);
+  border:1px solid var(--border);border-radius:5px;
+  padding:12px 10px;text-align:center;
+}
+.fn.hl { border-color:var(--amber);background:var(--amber-bg); }
+.fn.hlc { border-color:var(--cyan);background:var(--cyan-bg); }
+.fn-tag {
+  font-family:'JetBrains Mono',monospace;
+  font-size:8.5px;color:var(--text3);
+  letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px;
+}
+.fn-title { font-size:13px;font-weight:600;color:var(--bright);margin-bottom:2px; }
+.fn-sub { font-size:11px;color:var(--text2);line-height:1.4; }
+.fa { width:28px;text-align:center;color:var(--amber);font-size:16px;flex-shrink:0; }
+
+/* ── CHIP ── */
+.chip {
+  display:inline-block;padding:2px 10px;border-radius:2px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  letter-spacing:.05em;font-weight:500;
+}
+.chip.a { background:var(--amber-bg);border:1px solid var(--amber2);color:var(--amber); }
+.chip.c { background:var(--cyan-bg);border:1px solid var(--cyan2);color:var(--cyan); }
+.chip.b { background:var(--blue-bg);border:1px solid #2d6099;color:var(--blue); }
+.chip.g { background:rgba(77,201,138,.08);border:1px solid #2a7a50;color:var(--green); }
+
+/* ── BIG QUOTE ── */
+.bq {
+  border-left:3px solid var(--amber);
+  padding:14px 20px;
+  background:var(--amber-bg);
+  border-radius:0 4px 4px 0;
+  position:relative;z-index:1;
+}
+.bq p { font-size:14px;color:var(--text);line-height:1.7;font-style:italic; }
+.bq cite {
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:var(--text3);
+  display:block;margin-top:6px;letter-spacing:.06em;
+}
+
+/* ── BOTTOM BAR ── */
+.bar {
+  position:fixed;bottom:0;left:0;right:0;height:46px;
+  background:var(--panel);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:12px;z-index:200;
+}
+.btn {
+  background:none;border:1px solid var(--border);
+  color:var(--text2);font-family:'JetBrains Mono',monospace;
+  font-size:11px;padding:6px 16px;cursor:pointer;border-radius:3px;
+  transition:.15s;
+}
+.btn:hover { border-color:var(--amber);color:var(--amber); }
+.prog { flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin:0 14px; }
+.prog-fill { height:100%;background:linear-gradient(90deg,var(--amber),var(--cyan));border-radius:2px;transition:width .45s ease; }
+.counter {
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);
+}
+.counter span { color:var(--amber); }
+.kbd {
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  color:var(--text3);padding:3px 7px;
+  border:1px solid var(--border);border-radius:2px;
+}
+
+/* ── ANIM ── */
+.slide.active .card,
+.slide.active .stat,
+.slide.active .tl-item,
+.slide.active .note,
+.slide.active .fn,
+.slide.active .bq {
+  animation: up .4s ease both;
+}
+.slide.active .card:nth-child(1){ animation-delay:.04s; }
+.slide.active .card:nth-child(2){ animation-delay:.09s; }
+.slide.active .card:nth-child(3){ animation-delay:.14s; }
+.slide.active .stat:nth-child(1){ animation-delay:.04s; }
+.slide.active .stat:nth-child(2){ animation-delay:.08s; }
+.slide.active .stat:nth-child(3){ animation-delay:.12s; }
+.slide.active .stat:nth-child(4){ animation-delay:.16s; }
+.slide.active .tl-item:nth-child(1){ animation-delay:.04s; }
+.slide.active .tl-item:nth-child(2){ animation-delay:.10s; }
+.slide.active .tl-item:nth-child(3){ animation-delay:.16s; }
+.slide.active .tl-item:nth-child(4){ animation-delay:.22s; }
+.slide.active .tl-item:nth-child(5){ animation-delay:.28s; }
+.slide.active .fn:nth-child(1){ animation-delay:.04s; }
+.slide.active .fn:nth-child(2){ animation-delay:.08s; }
+.slide.active .fn:nth-child(3){ animation-delay:.12s; }
+.slide.active .fn:nth-child(4){ animation-delay:.16s; }
+.slide.active .fn:nth-child(5){ animation-delay:.20s; }
+@keyframes up {
+  from{opacity:0;transform:translateY(14px);}
+  to  {opacity:1;transform:translateY(0);}
+}
+
+/* title-slide glow */
+.glow-ring {
+  position:absolute;
+  width:500px;height:500px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(240,165,0,.07) 0%, transparent 70%);
+  right:-100px;bottom:-100px;
+  pointer-events:none;z-index:0;
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <span class="brand">AI × FINANCE</span>
+  <span class="pipe">|</span>
+  <span class="tag">LECTURE MODULE</span>
+  <span class="pipe">|</span>
+  <span style="color:var(--text2)">RAG의 현재와 미래</span>
+  <span class="pipe">|</span>
+  <span class="tag cyan">HW · SW 혁신</span>
+  <div class="right">
+    <div class="dot"></div>
+    <span style="color:var(--text3)">2026</span>
+  </div>
+</div>
+
+<div class="wrap">
+<div class="track" id="track">
+
+<!-- ══ S0: TITLE ══ -->
+<div class="slide" id="s0">
+  <div class="glow-ring"></div>
+  <div class="slide-num z"><span>00</span> &nbsp;MODULE INTRO</div>
+  <h1>RAG는 <em>죽었는가?</em><br>아니면 <span class="c">진화</span>하는가?</h1>
+  <div class="rule"></div>
+  <p class="z" style="font-size:14px;color:var(--text2);max-width:640px;line-height:1.8;margin-bottom:20px;">
+    2024~2026년, 하드웨어·소프트웨어 혁신이 RAG 생태계를 근본적으로 흔들고 있다.<br>
+    이 모듈은 세 가지 핵심 연구를 통해 "RAG의 현재 좌표"를 확인한다.
+  </p>
+  <div class="row z" style="gap:10px;margin-bottom:auto;">
+    <span class="chip a">Titans — 아키텍처 혁신</span>
+    <span class="chip c">TurboQuant — HW 병목 해소</span>
+    <span class="chip b">ERM — 인덱스 자기진화</span>
+  </div>
+  <div class="row z" style="margin-top:28px;gap:16px;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);line-height:2;">
+      <div>PREREQUISITE &nbsp;<span style="color:var(--text2)">RAG 기초 개념 (이전 강의)</span></div>
+      <div>LEVEL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text2)">학부 3~4년 / 대학원 입문</span></div>
+      <div>PAPERS &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--amber)">arXiv 2501.00663 · 2602.05152 · ICLR 2026</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S1: RAG 복습 ══ -->
+<div class="slide" id="s1">
+  <div class="slide-num z"><span>01</span> &nbsp;RECAP</div>
+  <h2>RAG 기초 <span class="hl">3분 복습</span></h2>
+  <div class="rule"></div>
+  <div class="col">
+    <div class="flow z">
+      <div class="fn">
+        <div class="fn-tag">입력</div>
+        <div class="fn-title">질문 (Query)</div>
+        <div class="fn-sub">"금리 인상의<br>효과는?"</div>
+      </div>
+      <div class="fa">→</div>
+      <div class="fn hl">
+        <div class="fn-tag">Retrieval</div>
+        <div class="fn-title">문서 검색</div>
+        <div class="fn-sub">벡터 DB에서<br>관련 chunk 탐색</div>
+      </div>
+      <div class="fa">→</div>
+      <div class="fn">
+        <div class="fn-tag">Augmentation</div>
+        <div class="fn-title">컨텍스트 주입</div>
+        <div class="fn-sub">검색된 문서를<br>프롬프트에 삽입</div>
+      </div>
+      <div class="fa">→</div>
+      <div class="fn hlc">
+        <div class="fn-tag">Generation</div>
+        <div class="fn-title">LLM 응답</div>
+        <div class="fn-sub">문서 기반<br>답변 생성</div>
+      </div>
+    </div>
+    <div class="g3">
+      <div class="card g">
+        <div class="card-tag">RAG의 강점</div>
+        <div class="card-title">왜 RAG를 쓰나?</div>
+        <ul>
+          <li><strong>Hallucination 감소</strong> — 문서 근거</li>
+          <li><strong>최신 정보 반영</strong> — 실시간 DB</li>
+          <li><strong>도메인 특화</strong> — 재학습 불필요</li>
+          <li><strong>출처 명시</strong> — 신뢰성 확보</li>
+        </ul>
+      </div>
+      <div class="card r">
+        <div class="card-tag">RAG의 한계</div>
+        <div class="card-title">왜 부족한가?</div>
+        <ul>
+          <li><strong>Stateless</strong> — 쿼리마다 처음부터</li>
+          <li><strong>Context 제한</strong> — 긴 문서 처리 한계</li>
+          <li><strong>KV 캐시 폭증</strong> — GPU 메모리 병목</li>
+          <li><strong>Chunk 맥락 손실</strong> — 분절 문제</li>
+        </ul>
+      </div>
+      <div class="card a">
+        <div class="card-tag">2026년 질문</div>
+        <div class="card-title">RAG의 미래는?</div>
+        <ul>
+          <li>Context window가 <strong>2M 토큰</strong>으로 늘면?</li>
+          <li>모델이 <strong>스스로 기억</strong>하면?</li>
+          <li>메모리 비용이 <strong>6배 줄면</strong>?</li>
+          <li>인덱스가 <strong>학습</strong>하면?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note a z">
+      <strong>이 강의의 핵심 질문:</strong> 아래 세 혁신은 각각 RAG의 어떤 한계를 어떻게 공략하는가? — 그리고 RAG를 대체하는가, 아니면 강화하는가?
+    </div>
+  </div>
+</div>
+
+<!-- ══ S2: 연구 지형도 타임라인 ══ -->
+<div class="slide" id="s2">
+  <div class="slide-num z"><span>02</span> &nbsp;LANDSCAPE</div>
+  <h2>2024–2026 <span class="hl">연구 타임라인</span></h2>
+  <div class="rule"></div>
+  <div class="col">
+    <div class="timeline z">
+      <div class="tl-item">
+        <div class="tl-date">2024.12</div>
+        <div class="tl-spine"><div class="tl-dot filled"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-title">Google Titans + MIRAS <span class="tl-chip a">아키텍처</span></div>
+          <div class="tl-desc">신경망 장기 기억 모듈(MLP) 도입. 2M 토큰 context 처리. BABILong에서 GPT-4·RAG+Llama3 능가. NeurIPS 2025 발표.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">2026.01</div>
+        <div class="tl-spine"><div class="tl-dot c"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-title">Agent Memory 연구 폭발 <span class="tl-chip c">생태계</span></div>
+          <div class="tl-desc">MAGMA, EverMemOS, MemRL 등 agentic memory 논문 급증. RAG와 메모리의 경계가 흐려지기 시작.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">2026.02</div>
+        <div class="tl-spine"><div class="tl-dot filled c"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-title">ERM — RAG without Forgetting <span class="tl-chip c">SW 혁신</span></div>
+          <div class="tl-desc">arXiv 2602.05152. Training-free RAG 인덱스 자기진화 프레임워크. BEIR·BRIGHT 13개 도메인 검증.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">2026.03</div>
+        <div class="tl-spine"><div class="tl-dot filled b"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-title">Google TurboQuant <span class="tl-chip b">HW 혁신</span></div>
+          <div class="tl-desc">KV Cache 6배 압축, 정확도 손실 없음. H100 GPU 8배 속도향상. 발표 후 삼성·SK하이닉스·마이크론 주가 하락. ICLR 2026.</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-date">2026.04 →</div>
+        <div class="tl-spine"><div class="tl-dot" style="border-style:dashed;"></div></div>
+        <div class="tl-content">
+          <div class="tl-title">ICLR 2026 발표 예정 <span class="tl-chip a">진행 중</span></div>
+          <div class="tl-desc">TurboQuant (Google) + KVTC (NVIDIA) 동시 발표. KV cache 압축 표준화 경쟁 시작.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S3: Titans ══ -->
+<div class="slide" id="s3">
+  <div class="slide-num z"><span>03</span> &nbsp;ARCHITECTURE INNOVATION</div>
+  <h2>Titans — <span class="hl">모델이 직접 기억</span>한다면?</h2>
+  <div class="rule"></div>
+  <div class="col">
+    <div class="stats z" style="flex:0;">
+      <div class="stat">
+        <div class="stat-val">2M+</div>
+        <div class="stat-label">Context Tokens</div>
+        <div class="stat-sub">기존 Transformer 대비 압도적</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val c">3</div>
+        <div class="stat-label">Memory Modules</div>
+        <div class="stat-sub">Core / Long-term / Persistent</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val g">↑↑</div>
+        <div class="stat-label">BABILong Score</div>
+        <div class="stat-sub">GPT-4, RAG+Llama3 모두 능가</div>
+      </div>
+    </div>
+    <div class="g32">
+      <div class="col" style="gap:12px;">
+        <div class="card a">
+          <div class="card-tag">핵심 아이디어</div>
+          <div class="card-title">3개의 메모리 모듈</div>
+          <ul>
+            <li><strong>Core (단기)</strong> — Attention, 현재 context</li>
+            <li><strong>Long-term</strong> — MLP 신경망이 과거를 압축 저장</li>
+            <li><strong>Persistent</strong> — 학습 후 고정, task 메타지식</li>
+          </ul>
+        </div>
+        <div class="card c">
+          <div class="card-tag">Surprise 메커니즘</div>
+          <div class="card-title">무엇을 기억할까?</div>
+          <p>"놀라운" 정보 = 기존 기억과 크게 다른 입력만 선택적으로 장기 저장. 적응적 망각으로 메모리 효율 관리.</p>
+        </div>
+      </div>
+      <div class="col" style="gap:12px;">
+        <div class="card b">
+          <div class="card-tag">RAG와의 관계</div>
+          <div class="card-title">대체? 공존?</div>
+          <ul>
+            <li>단순 문서 검색 → Titans가 대체 가능</li>
+            <li>동적 외부 DB 업데이트 → RAG 여전히 필요</li>
+            <li>추론 집약 태스크 → Titans가 확실히 강함</li>
+            <li><strong>현실적: 하이브리드 구조</strong></li>
+          </ul>
+        </div>
+        <div class="note z">
+          <strong>경제학 analogie:</strong> Titans의 Long-term Memory는 중앙은행이 과거 정책 결정 데이터를 모두 외우고 있는 것. RAG는 그때그때 보고서를 꺼내 읽는 것. 둘 다 필요한 상황이 있다.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S4: TurboQuant ══ -->
+<div class="slide" id="s4">
+  <div class="slide-num z"><span>04</span> &nbsp;HARDWARE INNOVATION</div>
+  <h2>TurboQuant — <span class="hl">메모리 병목</span>을 뚫다</h2>
+  <div class="rule"></div>
+  <div class="col">
+    <div class="stats z" style="flex:0;">
+      <div class="stat">
+        <div class="stat-val">6×</div>
+        <div class="stat-label">KV Cache 압축</div>
+        <div class="stat-sub">정확도 손실 없음</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val c">8×</div>
+        <div class="stat-label">Attention 속도</div>
+        <div class="stat-sub">H100 GPU 기준</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val g">3bit</div>
+        <div class="stat-label">최소 압축</div>
+        <div class="stat-sub">재학습 없이 즉시 적용</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val b">0</div>
+        <div class="stat-label">Fine-tuning 필요</div>
+        <div class="stat-sub">기존 모델에 바로 적용</div>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="col" style="gap:12px;">
+        <div class="card a">
+          <div class="card-tag">문제: KV Cache란?</div>
+          <div class="card-title">왜 이게 병목인가?</div>
+          <p>LLM이 토큰을 생성할 때마다 이전 모든 Key·Value 벡터를 저장. 70B 모델 512명 동시 사용 시 KV cache만 <strong>512GB — 모델 가중치의 4배</strong>.</p>
+        </div>
+        <div class="card c">
+          <div class="card-tag">TurboQuant 작동 원리</div>
+          <div class="card-title">2단계 압축 파이프라인</div>
+          <ul>
+            <li><strong>PolarQuant</strong> — 벡터를 극좌표로 변환, 대부분의 압축 처리</li>
+            <li><strong>QJL</strong> — 1비트 잔차 오류 보정으로 attention 정확도 유지</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col" style="gap:12px;">
+        <div class="card b">
+          <div class="card-tag">RAG와의 관계</div>
+          <div class="card-title">RAG 파이프라인을 직접 강화</div>
+          <ul>
+            <li>긴 context → 더 많은 chunk 동시 처리 가능</li>
+            <li>벡터 서치 속도 향상 (RAG 검색 단계)</li>
+            <li>더 많은 사용자 동시 서빙 가능</li>
+            <li><strong>RAG를 대체하지 않고 인프라 개선</strong></li>
+          </ul>
+        </div>
+        <div class="bq">
+          <p>"Google의 DeepSeek 모멘트" — Cloudflare CEO</p>
+          <cite>발표 당일 삼성·SK하이닉스·마이크론 주가 하락. HBM 수요 감소 우려.</cite>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S5: ERM ══ -->
+<div class="slide" id="s5">
+  <div class="slide-num z"><span>05</span> &nbsp;SOFTWARE INNOVATION</div>
+  <h2>ERM — RAG 인덱스가 <span class="hl">스스로 진화</span>한다</h2>
+  <div class="rule"></div>
+  <div class="col">
+    <div class="flow z" style="flex:0;">
+      <div class="fn">
+        <div class="fn-tag">입력</div>
+        <div class="fn-title">Query 수신</div>
+        <div class="fn-sub">RAG 파이프라인<br>정상 작동</div>
+      </div>
+      <div class="fa">→</div>
+      <div class="fn hl">
+        <div class="fn-tag">Gate</div>
+        <div class="fn-title">정답 검증</div>
+        <div class="fn-sub">응답이 맞으면<br>신호 추출</div>
+      </div>
+      <div class="fa">→</div>
+      <div class="fn hl">
+        <div class="fn-tag">Attribution</div>
+        <div class="fn-title">Key 귀속</div>
+        <div class="fn-sub">기여한 문서<br>key에만 반영</div>
+      </div>
+      <div class="fa">→</div>
+      <div class="fn hlc">
+        <div class="fn-tag">Update</div>
+        <div class="fn-title">인덱스 진화</div>
+        <div class="fn-sub">수렴 보장<br>점진적 업데이트</div>
+      </div>
+      <div class="fa">→</div>
+      <div class="fn">
+        <div class="fn-tag">결과</div>
+        <div class="fn-title">다음 유사 쿼리</div>
+        <div class="fn-sub">추가 비용 없이<br>더 정확한 검색</div>
+      </div>
+    </div>
+    <div class="g3">
+      <div class="card a">
+        <div class="card-tag">핵심 이론</div>
+        <div class="card-title">QE ≡ KE 증명</div>
+        <p>쿼리 확장 = 키 확장 (수학적 동치). 따라서 query-time 이득을 index에 amortize 가능. 수렴도 이론적으로 보장.</p>
+      </div>
+      <div class="card c">
+        <div class="card-tag">Zipf 분포 활용</div>
+        <div class="card-title">왜 효율적인가?</div>
+        <p>실세계 쿼리는 Zipf 분포 → 소수 문서에 트래픽 집중. 모든 key를 업데이트하지 않고 <strong>lazy update</strong>로 충분.</p>
+      </div>
+      <div class="card b">
+        <div class="card-tag">RAG와의 관계</div>
+        <div class="card-title">RAG 위에 얹는 레이어</div>
+        <p>기존 RAG 파이프라인 수정 없이 추가. <strong>쓸수록 좋아지는</strong> 자기진화 RAG. Training-free.</p>
+      </div>
+    </div>
+    <div class="note z">
+      <strong>경제학 analogie (베이지안 업데이트):</strong> 사전 확률(기존 index) + 검증된 데이터(정답 쿼리) → 사후 확률(진화된 index). 단, norm-bounded이므로 <strong>과잉반응 없는 합리적 기대 조정</strong>.
+    </div>
+  </div>
+</div>
+
+<!-- ══ S6: 비교표 ══ -->
+<div class="slide" id="s6">
+  <div class="slide-num z"><span>06</span> &nbsp;SYNTHESIS</div>
+  <h2>세 혁신의 <span class="hl">포지셔닝 맵</span></h2>
+  <div class="rule"></div>
+  <div class="col">
+    <table class="tbl z">
+      <thead>
+        <tr>
+          <th>혁신</th>
+          <th>레이어</th>
+          <th>RAG 대체?</th>
+          <th>즉시 적용?</th>
+          <th>주요 효과</th>
+          <th>한계</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color:var(--amber)">Titans</strong><br><span style="font-size:10px;color:var(--text3)">Google, 2024.12</span></td>
+          <td>모델 아키텍처</td>
+          <td class="mid">부분 대체 가능</td>
+          <td class="bad">새 모델 필요</td>
+          <td>2M+ 토큰 장기 기억<br>추론 태스크 압도</td>
+          <td>기존 LLM 교체 비용<br>대규모 미검증</td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--blue)">TurboQuant</strong><br><span style="font-size:10px;color:var(--text3)">Google, 2026.03</span></td>
+          <td>추론 인프라</td>
+          <td class="good">대체 아님 (강화)</td>
+          <td class="mid">커뮤니티 구현</td>
+          <td>KV cache 6x 압축<br>동일 HW로 더 긴 context</td>
+          <td>공식 코드 미공개<br>8B 이하 모델만 검증</td>
+        </tr>
+        <tr class="hl-row">
+          <td><strong style="color:var(--cyan)">ERM</strong><br><span style="font-size:10px;color:var(--text3)">2026.02</span></td>
+          <td>검색 인덱스</td>
+          <td class="good">대체 아님 (진화)</td>
+          <td class="good">기존 RAG 위에 추가</td>
+          <td>쿼리 누적 → 성능 향상<br>zero inference overhead</td>
+          <td>cold start<br>verifier 품질 의존</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="g2" style="flex:0;">
+      <div class="note a z">
+        <strong>결론 1 — RAG는 죽지 않았다:</strong> 세 연구 모두 RAG를 대체하지 않는다. Titans는 아키텍처 혁신, TurboQuant는 인프라 효율화, ERM은 인덱스 진화 — 모두 RAG 생태계를 강화하는 방향.
+      </div>
+      <div class="note z">
+        <strong>결론 2 — 레이어별 혁신:</strong> HW(TurboQuant) · 모델(Titans) · 소프트웨어(ERM)가 동시에 진화 중. 실무에서는 <strong>목적에 따라 레이어를 선택적으로 조합</strong>하는 전략이 핵심.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S7: 금융 적용 ══ -->
+<div class="slide" id="s7">
+  <div class="slide-num z"><span>07</span> &nbsp;APPLICATION</div>
+  <h2>금융·경제 분야 <span class="hlc">실제 적용 시나리오</span></h2>
+  <div class="rule"></div>
+  <div class="col">
+    <div class="g3">
+      <div class="card a">
+        <div class="card-tag">시나리오 A — ERM 적용</div>
+        <div class="card-title">리서치 리포트 DB</div>
+        <p>증권사·연구기관이 반복적으로 조회하는 섹터/기업 쿼리가 쌓일수록 관련 인덱스 키 자동 강화. <strong>애널리스트 쿼리 패턴이 시스템을 훈련시킴.</strong></p>
+      </div>
+      <div class="card b">
+        <div class="card-tag">시나리오 B — TurboQuant 적용</div>
+        <div class="card-title">멀티유저 금융 AI 서비스</div>
+        <p>동일 GPU로 처리 가능한 동시 사용자 수 대폭 증가. 긴 공시문서·계약서를 한번에 처리하는 long-context RAG 서비스 가능.</p>
+      </div>
+      <div class="card c">
+        <div class="card-tag">시나리오 C — Titans 적용</div>
+        <div class="card-title">복잡한 추론 질의</div>
+        <p>"2008 금융위기 패턴과 현재 상황의 유사점을 수백 페이지 보고서에서 찾아줘" 같은 <strong>멀티홉 장기 추론 태스크.</strong></p>
+      </div>
+    </div>
+    <div class="mono z">
+<span class="cm"># 실무 판단 가이드 — 어떤 혁신을 언제 쓸까?</span>
+<br>
+<br><span class="k">if</span> 문제 == <span class="s">"긴 문서 추론 / 2M 토큰 처리"</span>:
+<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="g">→ Titans 기반 모델 검토</span>  <span class="cm"># 아직 상용화 초기</span>
+<br>
+<br><span class="k">elif</span> 문제 == <span class="s">"GPU 비용 / 동시 사용자 확장"</span>:
+<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="g">→ TurboQuant KV cache 압축 적용</span>  <span class="cm"># 커뮤니티 구현 활용</span>
+<br>
+<br><span class="k">elif</span> 문제 == <span class="s">"반복 쿼리 정확도 / 인덱스 개선"</span>:
+<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="g">→ ERM 레이어 추가</span>  <span class="cm"># 기존 RAG 스택 유지</span>
+<br>
+<br><span class="k">else</span>:
+<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="g">→ Standard RAG</span>  <span class="cm"># 여전히 강력한 baseline</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S8: 토론 / 정리 ══ -->
+<div class="slide" id="s8">
+  <div class="slide-num z"><span>08</span> &nbsp;DISCUSSION & SUMMARY</div>
+  <h2>토론 질문과 <span class="hl">핵심 요약</span></h2>
+  <div class="rule"></div>
+  <div class="col">
+    <div class="g2">
+      <div class="col" style="gap:12px;">
+        <div class="card p">
+          <div class="card-tag">토론 1</div>
+          <div class="card-title">TurboQuant의 역설</div>
+          <p>KV cache 압축이 메모리 비용을 줄이면, 오히려 <strong>더 긴 context를 쓰게 되어</strong> 총 메모리 수요가 늘 수도 있다. (Jevons Paradox) 이게 왜 문제이거나 문제가 아닌가?</p>
+        </div>
+        <div class="card p">
+          <div class="card-tag">토론 2</div>
+          <div class="card-title">Titans가 완벽하다면?</div>
+          <p>모델이 모든 것을 기억할 수 있다면 RAG가 필요한가? <strong>어떤 use case에서는 여전히 RAG가 필수적인가?</strong> (힌트: 실시간성, 프라이버시, 비용)</p>
+        </div>
+      </div>
+      <div class="col" style="gap:12px;">
+        <div class="card a">
+          <div class="card-tag">3줄 요약</div>
+          <div class="card-title">이번 강의 핵심</div>
+          <ul>
+            <li><strong>Titans</strong> — 모델이 직접 장기 기억, RAG 부분 대체 가능</li>
+            <li><strong>TurboQuant</strong> — HW 병목 해소, RAG 인프라 비용 절감</li>
+            <li><strong>ERM</strong> — 인덱스 자기진화, 기존 RAG를 점진적 강화</li>
+          </ul>
+        </div>
+        <div class="note a z">
+          <strong>Big Picture:</strong> RAG는 "죽은" 것이 아니라 <em>레이어별로 진화</em>하고 있다. HW·아키텍처·소프트웨어가 동시에 발전하며 서로를 강화한다. 어떤 단일 기술도 모든 문제를 해결하지 않는다.
+        </div>
+        <div style="z-index:1;position:relative;display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="chip a">arXiv 2501.00663</span>
+          <span class="chip c">arXiv 2602.05152</span>
+          <span class="chip b">ICLR 2026 TurboQuant</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /track -->
+</div><!-- /wrap -->
+
+<!-- BOTTOM BAR -->
+<div class="bar">
+  <button class="btn" onclick="go(cur-1)">← PREV</button>
+  <button class="btn" onclick="go(cur+1)">NEXT →</button>
+  <div class="prog"><div class="prog-fill" id="pf"></div></div>
+  <div class="counter">SLIDE <span id="cn">01</span> / <span id="ct">09</span></div>
+  <div class="kbd">← →</div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const track  = document.getElementById('track');
+const pf     = document.getElementById('pf');
+const cn     = document.getElementById('cn');
+const ct     = document.getElementById('ct');
+let cur = 0;
+const N = slides.length;
+ct.textContent = String(N).padStart(2,'0');
+
+function go(n){
+  slides[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(n, N-1));
+  track.style.transform = `translateX(-${cur*100}%)`;
+  pf.style.width = `${(cur+1)/N*100}%`;
+  cn.textContent = String(cur+1).padStart(2,'0');
+  setTimeout(()=> slides[cur].classList.add('active'), 80);
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') go(cur+1);
+  if(e.key==='ArrowLeft' ||e.key==='ArrowUp')   go(cur-1);
+});
+
+let tx=0;
+document.addEventListener('touchstart', e=>{ tx=e.touches[0].clientX; });
+document.addEventListener('touchend',   e=>{
+  const dx = e.changedTouches[0].clientX - tx;
+  if(dx < -50) go(cur+1);
+  if(dx >  50) go(cur-1);
+});
+
+go(0);
+</script>
+</body>
+</html>
