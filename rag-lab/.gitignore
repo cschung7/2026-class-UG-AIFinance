@@ -1,0 +1,24 @@
+# 환경
+.env
+__pycache__/
+*.pyc
+.cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+
+# 캐시
+benchmark/results.json
+wiki/*.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 큰 파일
+papers/*.pdf
