@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG vs LightRAG vs Wiki-RAG — 세 가지 검색 증강 생성 비교</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #06080a;
+  --bg2:      #0c1018;
+  --bg3:      #101520;
+  --panel:    #0e1520;
+  --border:   #1c2840;
+  --border2:  #243350;
+  --amber:    #f0a500;
+  --amber2:   #c07800;
+  --amber-bg: rgba(240,165,0,0.08);
+  --cyan:     #38d9c0;
+  --cyan2:    #1f9e8c;
+  --cyan-bg:  rgba(56,217,192,0.07);
+  --blue:     #4d9de0;
+  --blue-bg:  rgba(77,157,224,0.07);
+  --red:      #e05c5c;
+  --green:    #4dc98a;
+  --purple:   #b48ef0;
+  --purple-bg:rgba(180,142,240,0.07);
+  --text:     #c8d4e0;
+  --text2:    #7a92aa;
+  --text3:    #3d5570;
+  --bright:   #eef4ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:9999;}
+
+/* TOPBAR */
+.topbar{position:fixed;top:0;left:0;right:0;height:38px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);z-index:200;}
+.topbar .brand{color:var(--amber);font-weight:600;letter-spacing:.06em;}
+.topbar .pipe{color:var(--border2);}
+.topbar .tag{padding:2px 9px;border-radius:2px;font-size:10px;letter-spacing:.08em;background:var(--amber-bg);border:1px solid var(--amber2);color:var(--amber);}
+.topbar .tag.cyan{background:var(--cyan-bg);border-color:var(--cyan2);color:var(--cyan);}
+.topbar .tag.purple{background:var(--purple-bg);border-color:#7a5aab;color:var(--purple);}
+.topbar .right{margin-left:auto;display:flex;gap:14px;align-items:center;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(77,201,138,.4)}50%{opacity:.6;box-shadow:0 0 0 5px rgba(77,201,138,0)}}
+
+/* SLIDES */
+.wrap{position:fixed;inset:38px 0 46px 0;overflow:hidden;}
+.track{display:flex;height:100%;transition:transform .55s cubic-bezier(.77,0,.18,1);}
+.slide{min-width:100%;height:100%;padding:44px 64px 32px;display:flex;flex-direction:column;position:relative;overflow-y:auto;}
+.slide::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(28,40,64,.9) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+
+/* TYPOGRAPHY */
+.slide-num{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px;position:relative;z-index:1;}
+.slide-num span{color:var(--amber);}
+h1{font-family:'Syne',sans-serif;font-size:clamp(32px,4.2vw,54px);font-weight:800;color:var(--bright);line-height:1.05;margin-bottom:8px;position:relative;z-index:1;}
+h1 em{color:var(--amber);font-style:normal;}
+h1 .c{color:var(--cyan);}
+h1 .p{color:var(--purple);}
+h2{font-family:'Syne',sans-serif;font-size:clamp(22px,2.8vw,34px);font-weight:700;color:var(--bright);line-height:1.15;margin-bottom:16px;position:relative;z-index:1;}
+h2 .hl{color:var(--amber);}
+h2 .hlc{color:var(--cyan);}
+h2 .hlp{color:var(--purple);}
+.sub{font-size:15px;color:var(--text2);line-height:1.55;margin-bottom:18px;position:relative;z-index:1;}
+.sub strong{color:var(--text);}
+.rule{width:100%;height:1px;background:linear-gradient(90deg,var(--amber) 0%,var(--border) 55%);margin-bottom:18px;position:relative;z-index:1;}
+
+/* LAYOUT */
+.z{position:relative;z-index:1;}
+.col{display:flex;flex-direction:column;gap:14px;flex:1;}
+.row{display:flex;gap:14px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;flex:1;}
+.g32{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;flex:1;}
+
+/* CARD */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:18px 20px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.card.a::before{background:var(--amber);}
+.card.c::before{background:var(--cyan);}
+.card.b::before{background:var(--blue);}
+.card.r::before{background:var(--red);}
+.card.g::before{background:var(--green);}
+.card.p::before{background:var(--purple);}
+.card-tag{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px;}
+.card-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:var(--bright);margin-bottom:8px;}
+.card p,.card li{font-size:12.5px;color:var(--text2);line-height:1.7;}
+.card ul{padding-left:14px;}
+.card li{margin-bottom:3px;}
+.card li strong{color:var(--text);}
+
+/* MONO BOX */
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9;background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:4px;padding:14px 18px;color:var(--text);position:relative;z-index:1;}
+.mono .k{color:var(--blue);}
+.mono .v{color:var(--amber);}
+.mono .s{color:var(--cyan);}
+.mono .cm{color:var(--text3);font-style:italic;}
+.mono .fn{color:var(--purple);}
+.mono .g{color:var(--green);}
+
+/* STAT */
+.stats{display:flex;gap:12px;position:relative;z-index:1;}
+.stat{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center;}
+.stat-val{font-family:'Syne',sans-serif;font-size:clamp(28px,3.5vw,42px);font-weight:800;color:var(--amber);line-height:1;margin-bottom:4px;}
+.stat-val.c{color:var(--cyan);}
+.stat-val.g{color:var(--green);}
+.stat-val.b{color:var(--blue);}
+.stat-val.p{color:var(--purple);}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;}
+.stat-sub{font-size:11px;color:var(--text2);}
+
+/* FLOW */
+.flow{display:flex;align-items:center;gap:0;position:relative;z-index:1;}
+.fn{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:12px 10px;text-align:center;}
+.fn.hl{border-color:var(--amber);background:var(--amber-bg);}
+.fn.hlc{border-color:var(--cyan);background:var(--cyan-bg);}
+.fn.hlp{border-color:var(--purple);background:var(--purple-bg);}
+.fn-tag{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:3px;}
+.fn-title{font-size:13px;font-weight:600;color:var(--bright);margin-bottom:2px;}
+.fn-sub{font-size:11px;color:var(--text2);line-height:1.4;}
+.fa{width:28px;text-align:center;color:var(--amber);font-size:16px;flex-shrink:0;}
+.fa.c{color:var(--cyan);}
+.fa.p{color:var(--purple);}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px;position:relative;z-index:1;}
+.tbl th{background:var(--bg3);border:1px solid var(--border);padding:9px 14px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);text-align:left;}
+.tbl td{border:1px solid var(--border);padding:9px 14px;color:var(--text2);vertical-align:top;line-height:1.55;}
+.tbl tr:hover td{background:rgba(255,255,255,.02);}
+.tbl .bad{color:var(--red);}
+.tbl .good{color:var(--green);}
+.tbl .mid{color:var(--amber);}
+.tbl .hl-row td{background:rgba(240,165,0,.05);border-color:var(--amber2);}
+.tbl .hlc-row td{background:rgba(56,217,192,.04);border-color:var(--cyan2);}
+.tbl .hlp-row td{background:rgba(180,142,240,.04);border-color:#7a5aab;}
+
+/* NOTE */
+.note{background:var(--cyan-bg);border:1px solid var(--cyan2);border-radius:4px;padding:12px 16px;font-size:12.5px;color:var(--text2);line-height:1.65;position:relative;z-index:1;}
+.note strong{color:var(--cyan);}
+.note.a{background:var(--amber-bg);border-color:var(--amber2);}
+.note.a strong{color:var(--amber);}
+.note.p{background:var(--purple-bg);border-color:#7a5aab;}
+.note.p strong{color:var(--purple);}
+
+/* QUOTE */
+.bq{border-left:3px solid var(--amber);padding:14px 20px;background:var(--amber-bg);border-radius:0 4px 4px 0;position:relative;z-index:1;}
+.bq p{font-size:14px;color:var(--text);line-height:1.7;font-style:italic;}
+.bq cite{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);display:block;margin-top:6px;letter-spacing:.06em;}
+.bq.p{border-color:var(--purple);background:var(--purple-bg);}
+
+/* CHIP */
+.chip{display:inline-block;padding:2px 10px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;font-weight:500;}
+.chip.a{background:var(--amber-bg);border:1px solid var(--amber2);color:var(--amber);}
+.chip.c{background:var(--cyan-bg);border:1px solid var(--cyan2);color:var(--cyan);}
+.chip.b{background:var(--blue-bg);border:1px solid #2d6099;color:var(--blue);}
+.chip.g{background:rgba(77,201,138,.08);border:1px solid #2a7a50;color:var(--green);}
+.chip.p{background:var(--purple-bg);border:1px solid #7a5aab;color:var(--purple);}
+
+/* BAR CHART */
+.bar-chart{position:relative;z-index:1;display:flex;flex-direction:column;gap:8px;}
+.bar-row{display:grid;grid-template-columns:90px 1fr 50px;gap:10px;align-items:center;}
+.bar-row .label{font-size:11px;color:var(--text2);text-align:right;font-family:'JetBrains Mono',monospace;}
+.bar-row .track-bg{height:22px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;overflow:hidden;position:relative;}
+.bar-row .bar-fill{height:100%;border-radius:2px;transition:width 1.2s cubic-bezier(.22,1,.36,1);}
+.bar-row .bar-fill.a{background:linear-gradient(90deg,var(--amber2),var(--amber));}
+.bar-row .bar-fill.c{background:linear-gradient(90deg,var(--cyan2),var(--cyan));}
+.bar-row .bar-fill.p{background:linear-gradient(90deg,#7a5aab,var(--purple));}
+.bar-row .val{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+.bar-row .val.a{color:var(--amber);}
+.bar-row .val.c{color:var(--cyan);}
+.bar-row .val.p{color:var(--purple);}
+
+/* DIAGRAM NODES */
+.diagram{position:relative;z-index:1;}
+.d-box{background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:10px 14px;font-size:12px;display:inline-block;text-align:center;}
+.d-box.a{border-color:var(--amber);background:var(--amber-bg);}
+.d-box.c{border-color:var(--cyan);background:var(--cyan-bg);}
+.d-box.p{border-color:#7a5aab;background:var(--purple-bg);}
+.d-box strong{color:var(--bright);font-size:13px;display:block;}
+.d-box span{color:var(--text2);font-size:10px;}
+.d-arrow{color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:18px;display:inline-block;margin:0 6px;}
+
+/* BOTTOM BAR */
+.bar-b{position:fixed;bottom:0;left:0;right:0;height:46px;background:var(--panel);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;z-index:200;}
+.btn{background:none;border:1px solid var(--border);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 16px;cursor:pointer;border-radius:3px;transition:.15s;}
+.btn:hover{border-color:var(--amber);color:var(--amber);}
+.prog{flex:1;height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin:0 14px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--cyan));border-radius:2px;transition:width .45s ease;}
+.counter{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);}
+.counter span{color:var(--amber);}
+.kbd{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);padding:3px 7px;border:1px solid var(--border);border-radius:2px;}
+
+/* ANIM */
+.slide.active .card,.slide.active .stat,.slide.active .note,.slide.active .fn,.slide.active .bq,.slide.active .bar-row{animation:up .4s ease both;}
+.slide.active .card:nth-child(1),.slide.active .fn:nth-child(1),.slide.active .bar-row:nth-child(1){animation-delay:.04s;}
+.slide.active .card:nth-child(2),.slide.active .fn:nth-child(2),.slide.active .bar-row:nth-child(2){animation-delay:.09s;}
+.slide.active .card:nth-child(3),.slide.active .fn:nth-child(3),.slide.active .bar-row:nth-child(3){animation-delay:.14s;}
+.slide.active .stat:nth-child(1){animation-delay:.04s;}
+.slide.active .stat:nth-child(2){animation-delay:.08s;}
+.slide.active .stat:nth-child(3){animation-delay:.12s;}
+.slide.active .stat:nth-child(4){animation-delay:.16s;}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">WWAI RESEARCH</div>
+  <span class="pipe">│</span>
+  <span class="tag">RAG</span>
+  <span class="tag cyan">LightRAG</span>
+  <span class="tag purple">Wiki-RAG</span>
+  <span class="pipe">│</span>
+  <span>Retrieval-Augmented Generation 비교 분석</span>
+  <div class="right">
+    <span>2026 Spring</span>
+    <div class="dot"></div>
+  </div>
+</div>
+
+<!-- SLIDES -->
+<div class="wrap">
+<div class="track" id="track">
+
+<!-- ═══ SLIDE 0: TITLE ═══ -->
+<div class="slide">
+  <div class="slide-num">module <span>07</span></div>
+  <h1>RAG vs <span class="c">LightRAG</span> vs <span class="p">Wiki-RAG</span></h1>
+  <div class="rule"></div>
+  <div class="sub">세 가지 검색 증강 생성 아키텍처의 원리, 구현, 그리고 성능 비교<br><strong>Andrej Karpathy의 LLM-Wiki 패턴</strong> (2026.04) 포함</div>
+
+  <div class="stats z" style="margin-bottom:20px;">
+    <div class="stat"><div class="stat-val">3</div><div class="stat-label">Architectures</div><div class="stat-sub">RAG · LightRAG · Wiki</div></div>
+    <div class="stat"><div class="stat-val c">5</div><div class="stat-label">NBER Papers</div><div class="stat-sub">실제 논문 벤치마크</div></div>
+    <div class="stat"><div class="stat-val g">4</div><div class="stat-label">Notebooks</div><div class="stat-sub">실습 Lab 포함</div></div>
+    <div class="stat"><div class="stat-val b">7.8</div><div class="stat-label">Best Score</div><div class="stat-sub">Wiki-RAG (10점 만점)</div></div>
+  </div>
+
+  <div class="bq z">
+    <p>"RAG는 매 질문마다 지식을 재발견한다. Wiki는 지식을 한 번 컴파일하고 계속 축적한다."</p>
+    <cite>— Andrej Karpathy, "LLM Knowledge Bases", April 2026</cite>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 1: THE PROBLEM ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>01</span> · problem</div>
+  <h2>LLM의 근본 문제: <span class="hl">지식의 한계</span></h2>
+  <div class="rule"></div>
+
+  <div class="g2 z">
+    <div class="col">
+      <div class="card r">
+        <div class="card-tag">limitation 01</div>
+        <div class="card-title">Knowledge Cutoff</div>
+        <p>훈련 데이터 이후의 정보를 모른다. 2024년 논문? 오늘의 주가? → 답변 불가</p>
+      </div>
+      <div class="card r">
+        <div class="card-tag">limitation 02</div>
+        <div class="card-title">Hallucination</div>
+        <p>존재하지 않는 논문을 인용하고, 그럴듯한 거짓을 생성한다. 연구에서는 치명적.</p>
+      </div>
+      <div class="card r">
+        <div class="card-tag">limitation 03</div>
+        <div class="card-title">Context Window</div>
+        <p>논문 5편 = ~300페이지. 모든 걸 프롬프트에 넣을 수 없다. 어떤 부분을 선택할 것인가?</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card g">
+        <div class="card-tag">solution</div>
+        <div class="card-title">RAG: Retrieval-Augmented Generation</div>
+        <p>외부 지식 소스에서 <strong>관련 정보를 검색</strong>하여 LLM 프롬프트에 주입</p>
+        <ul style="margin-top:10px;">
+          <li><strong>Knowledge cutoff</strong> → 실시간 DB에서 검색</li>
+          <li><strong>Hallucination</strong> → 출처 기반 답변 강제</li>
+          <li><strong>Context limit</strong> → 관련 부분만 선택 검색</li>
+        </ul>
+      </div>
+      <div class="note a" style="margin-top:4px;">
+        <strong>핵심 질문:</strong> "검색"을 어떻게 하느냐에 따라 RAG의 품질이 결정된다. 오늘 세 가지 접근법을 비교한다.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 2: STANDARD RAG ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>02</span> · method 1</div>
+  <h2><span class="hl">Standard RAG</span>: Chunk → Embed → Retrieve</h2>
+  <div class="rule"></div>
+
+  <div class="flow z" style="margin-bottom:18px;">
+    <div class="fn"><div class="fn-tag">input</div><div class="fn-title">문서들</div><div class="fn-sub">PDF, 논문, 보고서</div></div>
+    <div class="fa">→</div>
+    <div class="fn"><div class="fn-tag">step 1</div><div class="fn-title">청킹</div><div class="fn-sub">2000자 단위로 분할</div></div>
+    <div class="fa">→</div>
+    <div class="fn hl"><div class="fn-tag">step 2</div><div class="fn-title">임베딩</div><div class="fn-sub">텍스트 → 384차원 벡터</div></div>
+    <div class="fa">→</div>
+    <div class="fn"><div class="fn-tag">step 3</div><div class="fn-title">FAISS 인덱스</div><div class="fn-sub">벡터 저장 & 검색</div></div>
+    <div class="fa">→</div>
+    <div class="fn hl"><div class="fn-tag">query time</div><div class="fn-title">검색 + LLM</div><div class="fn-sub">Top-K 청크 → 답변</div></div>
+  </div>
+
+  <div class="g2 z">
+    <div class="col">
+      <div class="card g">
+        <div class="card-tag">strengths</div>
+        <div class="card-title">장점</div>
+        <ul>
+          <li><strong>구축 3초</strong> — 임베딩만 하면 끝</li>
+          <li><strong>확장성</strong> — 수백만 문서 처리 가능</li>
+          <li><strong>단순함</strong> — 이해하기 쉬운 파이프라인</li>
+          <li><strong>성숙한 생태계</strong> — LangChain, LlamaIndex</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card r">
+        <div class="card-tag">weaknesses</div>
+        <div class="card-title">약점</div>
+        <ul>
+          <li><strong>문맥 손실</strong> — 청크가 원문의 맥락을 잃음</li>
+          <li><strong>무상태</strong> — 매 쿼리마다 지식을 재발견</li>
+          <li><strong>크로스 문서 약함</strong> — 논문 간 연결 못함</li>
+          <li><strong>불투명</strong> — 왜 이 청크가 검색됐는지?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="mono z" style="margin-top:14px;">
+    <span class="cm"># Python 핵심 코드 (3줄 요약)</span><br>
+    <span class="k">chunks</span> = chunk_text(paper, size=<span class="v">2000</span>)<br>
+    <span class="k">index</span>&nbsp; = FAISS.from_vectors(<span class="fn">engine.encode</span>(chunks))<br>
+    <span class="k">answer</span> = LLM(question + index.<span class="fn">search</span>(question, top_k=<span class="v">5</span>))
+  </div>
+</div>
+
+<!-- ═══ SLIDE 3: LIGHTRAG ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>03</span> · method 2</div>
+  <h2><span class="hlc">LightRAG</span>: Knowledge Graph + Vector Search</h2>
+  <div class="rule"></div>
+
+  <div class="flow z" style="margin-bottom:18px;">
+    <div class="fn"><div class="fn-tag">input</div><div class="fn-title">문서들</div><div class="fn-sub">PDF, 논문</div></div>
+    <div class="fa c">→</div>
+    <div class="fn hlc"><div class="fn-tag">step 1</div><div class="fn-title">LLM 추출</div><div class="fn-sub">엔티티 & 관계</div></div>
+    <div class="fa c">→</div>
+    <div class="fn"><div class="fn-tag">step 2</div><div class="fn-title">지식 그래프</div><div class="fn-sub">노드 + 엣지</div></div>
+    <div class="fa c">→</div>
+    <div class="fn"><div class="fn-tag">query time</div><div class="fn-title">그래프 탐색</div><div class="fn-sub">1-hop 이웃 확장</div></div>
+    <div class="fa c">+</div>
+    <div class="fn hlc"><div class="fn-tag">결합</div><div class="fn-title">벡터 검색</div><div class="fn-sub">Graph + Vector</div></div>
+  </div>
+
+  <div class="g2 z">
+    <div class="col">
+      <div class="card c">
+        <div class="card-tag">key innovation</div>
+        <div class="card-title">엔티티 + 관계 추출</div>
+        <p>LLM이 논문에서 구조화된 지식을 추출합니다:</p>
+        <div class="mono" style="margin-top:8px;border-left-color:var(--cyan);font-size:11px;">
+          <span class="s">Entity</span>: Card (<span class="k">person</span>)<br>
+          <span class="s">Entity</span>: Human Capital (<span class="k">concept</span>)<br>
+          <span class="s">Relation</span>: Card <span class="v">→studies→</span> Human Capital<br>
+          <span class="s">Relation</span>: Card <span class="v">→uses→</span> Census Data
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card c">
+        <div class="card-tag">dual retrieval</div>
+        <div class="card-title">그래프 + 벡터 결합</div>
+        <p>질문에서 엔티티를 찾고, 그래프를 탐색하여 <strong>관련 엔티티의 이웃</strong>까지 확장합니다.</p>
+        <ul style="margin-top:8px;">
+          <li><strong>벡터 검색</strong>: 의미적 유사도</li>
+          <li><strong>그래프 탐색</strong>: 구조적 관계</li>
+          <li><strong>결합</strong>: 두 신호를 합쳐서 LLM에 전달</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="note z" style="margin-top:14px;">
+    <strong>핵심 차이:</strong> Standard RAG는 "비슷한 텍스트"를 찾지만, LightRAG는 "관련된 엔티티와 그 관계"도 함께 제공한다.
+    크로스 논문 질문에서 특히 효과적.
+  </div>
+</div>
+
+<!-- ═══ SLIDE 4: KARPATHY WIKI ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>04</span> · method 3</div>
+  <h2><span class="hlp">Karpathy's LLM-Wiki</span>: Compile, Don't Retrieve</h2>
+  <div class="rule"></div>
+
+  <div class="bq p z" style="margin-bottom:16px;">
+    <p>"대부분의 RAG 경험은 이렇다: 파일을 올리면 LLM이 질문할 때마다 관련 조각을 찾는다. 이것은 작동하지만, LLM은 매 질문마다 처음부터 지식을 재발견하고 있다. 축적이 없다."</p>
+    <cite>— Andrej Karpathy, April 4, 2026 · GitHub Gist (4,600+ stars in 2 days)</cite>
+  </div>
+
+  <div class="g3 z">
+    <div class="card p">
+      <div class="card-tag">layer 1</div>
+      <div class="card-title">raw/ (원본)</div>
+      <p>불변의 소스 문서. LLM은 읽기만 하고 <strong>절대 수정하지 않는다</strong>.</p>
+      <p style="margin-top:6px;color:var(--text3);font-size:11px;">논문, 보고서, 데이터 파일</p>
+    </div>
+    <div class="card p">
+      <div class="card-tag">layer 2</div>
+      <div class="card-title">wiki/ (컴파일된 지식)</div>
+      <p>LLM이 <strong>생성하고 관리</strong>하는 마크다운 위키. 요약, 개념 페이지, 크로스 레퍼런스.</p>
+      <p style="margin-top:6px;color:var(--text3);font-size:11px;">index.md + 논문 요약 + 개념 페이지</p>
+    </div>
+    <div class="card p">
+      <div class="card-tag">layer 3</div>
+      <div class="card-title">schema (규칙)</div>
+      <p>위키의 <strong>구조와 규칙</strong>을 정의. LLM에게 "어떻게 위키를 관리할지" 지시.</p>
+      <p style="margin-top:6px;color:var(--text3);font-size:11px;">CLAUDE.md / AGENTS.md</p>
+    </div>
+  </div>
+
+  <div class="note p z" style="margin-top:14px;">
+    <strong>패러다임 전환:</strong> 임베딩도, 벡터 DB도 없다. 그냥 <strong>마크다운 파일</strong>이다.
+    사람이 직접 읽고, 편집하고, Git으로 버전 관리할 수 있다. 완전한 투명성.
+  </div>
+</div>
+
+<!-- ═══ SLIDE 5: WIKI OPERATIONS ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>05</span> · wiki-rag operations</div>
+  <h2>Wiki-RAG의 <span class="hlp">4가지 핵심 연산</span></h2>
+  <div class="rule"></div>
+
+  <div class="g2 z">
+    <div class="card p">
+      <div class="card-tag">operation 01</div>
+      <div class="card-title">📄 Ingest (수집)</div>
+      <p>새 문서를 위키에 추가:</p>
+      <ul>
+        <li>원본 → <strong>raw/</strong> 에 저장</li>
+        <li>LLM이 읽고 <strong>요약 페이지</strong> 생성</li>
+        <li>관련 <strong>10-15개 기존 페이지</strong> 업데이트</li>
+        <li><strong>index.md</strong> 갱신, <strong>log.md</strong> 기록</li>
+      </ul>
+    </div>
+    <div class="card p">
+      <div class="card-tag">operation 02</div>
+      <div class="card-title">🔍 Query (질의)</div>
+      <p>위키를 탐색하여 답변:</p>
+      <ul>
+        <li><strong>index.md</strong> 읽기 → 관련 페이지 식별</li>
+        <li>관련 위키 <strong>페이지 읽기</strong></li>
+        <li>여러 페이지 <strong>종합하여 답변</strong> 생성</li>
+        <li>좋은 답변은 <strong>새 위키 페이지</strong>로 저장</li>
+      </ul>
+    </div>
+    <div class="card p">
+      <div class="card-tag">operation 03</div>
+      <div class="card-title">🔧 Lint (건강 검사)</div>
+      <p>위키 품질 주기적 점검:</p>
+      <ul>
+        <li><strong>고아 페이지</strong> 발견 (아무도 링크 안 함)</li>
+        <li><strong>깨진 링크</strong> 수리 ([[없는페이지]])</li>
+        <li>페이지 간 <strong>모순</strong> 감지 & 해결</li>
+        <li><strong>데이터 갭</strong> 식별 & 조사 목록 생성</li>
+      </ul>
+    </div>
+    <div class="card p">
+      <div class="card-tag">operation 04</div>
+      <div class="card-title">📋 Index & Log (목록 & 기록)</div>
+      <p>위키의 네비게이션 시스템:</p>
+      <ul>
+        <li><strong>index.md</strong>: 모든 페이지의 한 줄 요약</li>
+        <li><strong>log.md</strong>: 시간순 작업 기록</li>
+        <li>LLM의 <strong>진입점</strong>: index → 관련 페이지</li>
+        <li>사람도 Obsidian에서 <strong>그래프 뷰</strong>로 탐색</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note a z" style="margin-top:14px;">
+    <strong>Karpathy의 통찰:</strong> "지식 기반 유지보수의 지루한 부분은 읽기나 생각이 아니라 — 장부 정리다.
+    LLM은 지루해하지 않고, 크로스 레퍼런스 업데이트를 잊지 않고, 한 번에 15개 파일을 수정할 수 있다."
+  </div>
+</div>
+
+<!-- ═══ SLIDE 6: ARCHITECTURE COMPARISON ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>06</span> · comparison</div>
+  <h2>아키텍처 <span class="hl">비교</span></h2>
+  <div class="rule"></div>
+
+  <table class="tbl z">
+    <thead>
+      <tr>
+        <th style="width:18%;">관점</th>
+        <th style="width:27%;color:var(--amber);">Standard RAG</th>
+        <th style="width:27%;color:var(--cyan);">LightRAG</th>
+        <th style="width:28%;color:var(--purple);">Karpathy Wiki-RAG</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>저장소</strong></td>
+        <td>벡터 DB (FAISS, Chroma)</td>
+        <td>벡터 DB + 지식 그래프</td>
+        <td class="hlp-row">마크다운 파일 📁</td>
+      </tr>
+      <tr>
+        <td><strong>검색 방식</strong></td>
+        <td>임베딩 유사도</td>
+        <td>그래프 탐색 + 벡터</td>
+        <td class="hlp-row">index.md → 페이지 탐색</td>
+      </tr>
+      <tr>
+        <td><strong>지식 상태</strong></td>
+        <td class="bad">무상태 (매번 재발견)</td>
+        <td class="mid">반영구 그래프</td>
+        <td class="good">영구, 축적됨</td>
+      </tr>
+      <tr>
+        <td><strong>투명성</strong></td>
+        <td class="bad">불투명 (벡터)</td>
+        <td class="mid">부분 투명</td>
+        <td class="good">완전 투명 (.md)</td>
+      </tr>
+      <tr>
+        <td><strong>크로스 레퍼런스</strong></td>
+        <td class="bad">없음</td>
+        <td class="mid">엔티티 그래프</td>
+        <td class="good">[[wiki links]]</td>
+      </tr>
+      <tr>
+        <td><strong>초기 비용</strong></td>
+        <td class="good">낮음 (3초)</td>
+        <td class="mid">중간 (56초)</td>
+        <td class="bad">높음 (72초)</td>
+      </tr>
+      <tr>
+        <td><strong>확장성</strong></td>
+        <td class="good">수백만 문서</td>
+        <td class="mid">수십만 문서</td>
+        <td class="bad">수백 문서</td>
+      </tr>
+      <tr>
+        <td><strong>인간 협업</strong></td>
+        <td class="bad">어려움</td>
+        <td class="mid">그래프 시각화 가능</td>
+        <td class="good">직접 편집 가능</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══ SLIDE 7: BENCHMARK RESULTS ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>07</span> · benchmark</div>
+  <h2>벤치마크 결과: <span class="hl">5편 NBER 논문</span>, <span class="hlc">5개 질문</span></h2>
+  <div class="rule"></div>
+  <div class="sub">LLM-as-Judge (gpt-4o-mini) 평가 · 각 차원 1-10점</div>
+
+  <div class="g32 z">
+    <div class="col" style="gap:16px;">
+      <div class="bar-chart">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.12em;margin-bottom:4px;">ACCURACY 정확성</div>
+        <div class="bar-row"><div class="label">RAG</div><div class="track-bg"><div class="bar-fill a" style="width:80%"></div></div><div class="val a">8.0</div></div>
+        <div class="bar-row"><div class="label">LightRAG</div><div class="track-bg"><div class="bar-fill c" style="width:82%"></div></div><div class="val c">8.2</div></div>
+        <div class="bar-row"><div class="label">Wiki-RAG</div><div class="track-bg"><div class="bar-fill p" style="width:90%"></div></div><div class="val p">9.0</div></div>
+      </div>
+      <div class="bar-chart">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.12em;margin-bottom:4px;">COMPLETENESS 완전성</div>
+        <div class="bar-row"><div class="label">RAG</div><div class="track-bg"><div class="bar-fill a" style="width:68%"></div></div><div class="val a">6.8</div></div>
+        <div class="bar-row"><div class="label">LightRAG</div><div class="track-bg"><div class="bar-fill c" style="width:70%"></div></div><div class="val c">7.0</div></div>
+        <div class="bar-row"><div class="label">Wiki-RAG</div><div class="track-bg"><div class="bar-fill p" style="width:80%"></div></div><div class="val p">8.0</div></div>
+      </div>
+      <div class="bar-chart">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.12em;margin-bottom:4px;">SPECIFICITY 구체성</div>
+        <div class="bar-row"><div class="label">RAG</div><div class="track-bg"><div class="bar-fill a" style="width:62%"></div></div><div class="val a">6.2</div></div>
+        <div class="bar-row"><div class="label">LightRAG</div><div class="track-bg"><div class="bar-fill c" style="width:64%"></div></div><div class="val c">6.4</div></div>
+        <div class="bar-row"><div class="label">Wiki-RAG</div><div class="track-bg"><div class="bar-fill p" style="width:74%"></div></div><div class="val p">7.4</div></div>
+      </div>
+      <div class="bar-chart">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.12em;margin-bottom:4px;">SYNTHESIS 통합성</div>
+        <div class="bar-row"><div class="label">RAG</div><div class="track-bg"><div class="bar-fill a" style="width:54%"></div></div><div class="val a">5.4</div></div>
+        <div class="bar-row"><div class="label">LightRAG</div><div class="track-bg"><div class="bar-fill c" style="width:56%"></div></div><div class="val c">5.6</div></div>
+        <div class="bar-row"><div class="label">Wiki-RAG</div><div class="track-bg"><div class="bar-fill p" style="width:66%"></div></div><div class="val p">6.6</div></div>
+      </div>
+    </div>
+    <div class="col" style="gap:12px;">
+      <div class="stat"><div class="stat-val">6.6</div><div class="stat-label">Standard RAG</div><div class="stat-sub">전체 평균</div></div>
+      <div class="stat"><div class="stat-val c">6.8</div><div class="stat-label">LightRAG</div><div class="stat-sub">+3% vs RAG</div></div>
+      <div class="stat"><div class="stat-val p">7.8</div><div class="stat-label">Wiki-RAG</div><div class="stat-sub">+18% vs RAG</div></div>
+      <div class="note p" style="font-size:11px;">
+        <strong>Wiki-RAG 우위:</strong> 통합성(Synthesis)에서 가장 큰 격차. 사전 컴파일된 크로스 레퍼런스가 핵심.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 8: BY QUESTION TYPE ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>08</span> · by question type</div>
+  <h2>질문 유형별 <span class="hl">성능 분석</span></h2>
+  <div class="rule"></div>
+
+  <div class="g3 z">
+    <div class="card a">
+      <div class="card-tag">factual · easy</div>
+      <div class="card-title">단일 논문 팩트 검색</div>
+      <p>"Card et al.의 주요 발견은?"</p>
+      <div style="margin-top:12px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;">
+          <span style="color:var(--amber)">7.0</span> ·
+          <span style="color:var(--cyan)">7.0</span> ·
+          <span style="color:var(--purple)">7.5</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">RAG · LightRAG · Wiki</div>
+      </div>
+      <p style="margin-top:10px;font-size:11.5px;">세 방법 모두 비슷. 단일 논문 검색은 Standard RAG로도 충분.</p>
+    </div>
+    <div class="card c">
+      <div class="card-tag">synthesis · hard</div>
+      <div class="card-title">크로스 논문 종합</div>
+      <p>"고용주 신용조회와 정보 비대칭의 관계는?"</p>
+      <div style="margin-top:12px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;">
+          <span style="color:var(--amber)">5.9</span> ·
+          <span style="color:var(--cyan)">7.2</span> ·
+          <span style="color:var(--purple)">7.8</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">RAG · LightRAG · Wiki</div>
+      </div>
+      <p style="margin-top:10px;font-size:11.5px;"><strong style="color:var(--red)">RAG 최약:</strong> 5.2점 (Q4). 관련 없는 청크 검색. Wiki는 이미 개념 페이지에 연결 정보 보유.</p>
+    </div>
+    <div class="card p">
+      <div class="card-tag">aggregation · medium</div>
+      <div class="card-title">전체 논문 집계</div>
+      <p>"모든 논문의 데이터셋과 방법론은?"</p>
+      <div style="margin-top:12px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;">
+          <span style="color:var(--amber)">7.2</span> ·
+          <span style="color:var(--cyan)">5.5</span> ·
+          <span style="color:var(--purple)">8.2</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">RAG · LightRAG · Wiki</div>
+      </div>
+      <p style="margin-top:10px;font-size:11.5px;"><strong style="color:var(--red)">LightRAG 최약:</strong> 그래프가 데이터셋 메타데이터를 잘 캡처하지 못함. Wiki는 각 요약 페이지에 이미 정리됨.</p>
+    </div>
+  </div>
+
+  <div class="note a z" style="margin-top:16px;">
+    <strong>핵심 교훈:</strong> 어떤 방법이 "최고"인가? → <strong>질문 유형에 따라 다르다.</strong>
+    팩트 검색은 RAG, 크로스 종합은 Wiki, 관계 추론은 LightRAG. 실전에서는 <strong>하이브리드</strong>가 답이다.
+  </div>
+</div>
+
+<!-- ═══ SLIDE 9: COST & TRADEOFFS ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>09</span> · tradeoffs</div>
+  <h2>비용과 <span class="hl">Trade-off</span></h2>
+  <div class="rule"></div>
+
+  <table class="tbl z" style="margin-bottom:18px;">
+    <thead>
+      <tr>
+        <th>지표</th>
+        <th style="color:var(--amber)">Standard RAG</th>
+        <th style="color:var(--cyan)">LightRAG</th>
+        <th style="color:var(--purple)">Wiki-RAG</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>구축 시간</strong></td>
+        <td class="good">3초</td>
+        <td class="mid">56초</td>
+        <td class="bad">72초</td>
+      </tr>
+      <tr>
+        <td><strong>평균 쿼리 시간</strong></td>
+        <td class="good">5.0초</td>
+        <td class="mid">6.2초</td>
+        <td class="bad">12.7초</td>
+      </tr>
+      <tr>
+        <td><strong>구축 시 LLM 호출</strong></td>
+        <td class="good">0회</td>
+        <td class="mid">논문당 1회</td>
+        <td class="bad">논문당 1회 + 개념 추출</td>
+      </tr>
+      <tr>
+        <td><strong>쿼리 시 LLM 호출</strong></td>
+        <td>1회 (생성만)</td>
+        <td>1회 (생성만)</td>
+        <td>2회 (탐색 + 생성)</td>
+      </tr>
+      <tr>
+        <td><strong>API 비용 (전체 실습)</strong></td>
+        <td class="good">~$0.10</td>
+        <td class="mid">~$0.30</td>
+        <td class="bad">~$0.50</td>
+      </tr>
+      <tr>
+        <td><strong>인프라 필요</strong></td>
+        <td>FAISS/Chroma + 임베딩 모델</td>
+        <td>FAISS + LLM API</td>
+        <td class="good">마크다운 파일만</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="g3 z">
+    <div class="card a">
+      <div class="card-title" style="font-size:14px;">RAG가 적합한 경우</div>
+      <ul>
+        <li><strong>대규모 문서</strong> (10K+ 문서)</li>
+        <li><strong>빠른 응답</strong> 필요</li>
+        <li><strong>단순 팩트</strong> 질문 위주</li>
+        <li>실시간 업데이트 빈번</li>
+      </ul>
+    </div>
+    <div class="card c">
+      <div class="card-title" style="font-size:14px;">LightRAG가 적합한 경우</div>
+      <ul>
+        <li><strong>엔티티 관계</strong>가 중요</li>
+        <li><strong>크로스 문서</strong> 질문 많음</li>
+        <li>중간 규모 (1K-100K)</li>
+        <li>그래프 시각화 활용</li>
+      </ul>
+    </div>
+    <div class="card p">
+      <div class="card-title" style="font-size:14px;">Wiki-RAG가 적합한 경우</div>
+      <ul>
+        <li><strong>깊은 연구</strong> (50-200 소스)</li>
+        <li><strong>지식 축적</strong> 필요</li>
+        <li>인간과 <strong>협업</strong></li>
+        <li>투명성·감사 가능성 필요</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 10: HYBRID ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>10</span> · practice</div>
+  <h2>실전: <span class="hl">하이브리드</span> 접근법</h2>
+  <div class="rule"></div>
+  <div class="sub">실제 연구에서는 세 가지를 <strong>계층적으로 결합</strong>합니다</div>
+
+  <div class="col z" style="gap:12px;">
+    <div class="card a" style="padding:16px 20px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--amber);min-width:80px;text-align:center;">L1</div>
+        <div>
+          <div class="card-title" style="margin-bottom:4px;">Standard RAG — 광범위 검색 (넓은 그물)</div>
+          <p>25,000편 논문 전체에서 벡터 유사도로 검색. "이 주제에 대한 논문을 찾아줘"</p>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--text3);font-size:20px;">▼ 상위 50-100편 선별</div>
+    <div class="card c" style="padding:16px 20px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--cyan);min-width:80px;text-align:center;">L2</div>
+        <div>
+          <div class="card-title" style="margin-bottom:4px;">LightRAG — 관계 분석 (구조화)</div>
+          <p>선별된 논문에서 엔티티 추출 + 지식 그래프 구축. 저자, 방법론, 데이터셋 간 관계 매핑.</p>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;color:var(--text3);font-size:20px;">▼ 핵심 연구 주제로 압축</div>
+    <div class="card p" style="padding:16px 20px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--purple);min-width:80px;text-align:center;">L3</div>
+        <div>
+          <div class="card-title" style="margin-bottom:4px;">Karpathy Wiki — 깊은 지식 축적 (연구 위키)</div>
+          <p>핵심 50편을 위키로 컴파일. 크로스 레퍼런스, 모순 탐지, 개념 종합. 연구자가 직접 편집.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 11: LAB ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>11</span> · hands-on lab</div>
+  <h2>실습: <span class="hl">rag-lab</span> 패키지</h2>
+  <div class="rule"></div>
+
+  <div class="g2 z">
+    <div class="col" style="gap:12px;">
+      <div class="mono" style="font-size:11.5px;line-height:2;">
+        <span class="cm"># 1. 클론</span><br>
+        <span class="g">$</span> git clone &lt;repo-url&gt;<br>
+        <span class="g">$</span> cd rag-lab<br><br>
+        <span class="cm"># 2. 환경 설정</span><br>
+        <span class="g">$</span> pip install -r requirements.txt<br>
+        <span class="g">$</span> cp .env.example .env<br>
+        <span class="cm"># .env에 OPENAI_API_KEY 입력</span><br><br>
+        <span class="cm"># 3. 노트북 실행</span><br>
+        <span class="g">$</span> jupyter notebook notebooks/
+      </div>
+
+      <div class="note" style="font-size:11.5px;">
+        <strong>API 비용 안내:</strong> gpt-4o-mini 기준 전체 실습 1회 ~$0.50. 캐시 사용 시 재실행 비용 $0.
+      </div>
+    </div>
+    <div class="col" style="gap:10px;">
+      <div class="card a">
+        <div class="card-tag">lab 01 · 30분</div>
+        <div class="card-title">Standard RAG</div>
+        <p>청킹 실험, 임베딩 시각화, FAISS 검색, 청크 크기 비교</p>
+      </div>
+      <div class="card c">
+        <div class="card-tag">lab 02 · 30분</div>
+        <div class="card-title">LightRAG</div>
+        <p>엔티티 추출, 지식 그래프 탐색, 그래프+벡터 결합</p>
+      </div>
+      <div class="card p">
+        <div class="card-tag">lab 03 · 40분</div>
+        <div class="card-title">Karpathy Wiki-RAG</div>
+        <p>위키 컴파일, index 탐색, lint 검사, 증분 업데이트</p>
+      </div>
+      <div class="card g">
+        <div class="card-tag">lab 04 · 20분</div>
+        <div class="card-title">종합 벤치마크</div>
+        <p>3가지 방법 동시 비교, LLM-as-Judge 평가, 질문 유형별 분석</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SLIDE 12: TAKEAWAYS ═══ -->
+<div class="slide">
+  <div class="slide-num">slide <span>12</span> · takeaways</div>
+  <h2>핵심 정리</h2>
+  <div class="rule"></div>
+
+  <div class="g3 z" style="margin-bottom:18px;">
+    <div class="card a">
+      <div class="card-title" style="text-align:center;">Standard RAG</div>
+      <div style="text-align:center;font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--amber);margin:8px 0;">검색</div>
+      <p style="text-align:center;font-size:12px;">"비슷한 텍스트 조각을<br>벡터로 찾는다"</p>
+      <div style="margin-top:10px;text-align:center;">
+        <span class="chip a">빠름</span>
+        <span class="chip a">대규모</span>
+      </div>
+    </div>
+    <div class="card c">
+      <div class="card-title" style="text-align:center;">LightRAG</div>
+      <div style="text-align:center;font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--cyan);margin:8px 0;">연결</div>
+      <p style="text-align:center;font-size:12px;">"엔티티와 관계를<br>그래프로 탐색한다"</p>
+      <div style="margin-top:10px;text-align:center;">
+        <span class="chip c">관계</span>
+        <span class="chip c">구조</span>
+      </div>
+    </div>
+    <div class="card p">
+      <div class="card-title" style="text-align:center;">Karpathy Wiki-RAG</div>
+      <div style="text-align:center;font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--purple);margin:8px 0;">컴파일</div>
+      <p style="text-align:center;font-size:12px;">"지식을 한 번 정리하고<br>계속 축적한다"</p>
+      <div style="margin-top:10px;text-align:center;">
+        <span class="chip p">투명</span>
+        <span class="chip p">축적</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bq z" style="margin-bottom:16px;">
+    <p>"최고의 RAG 시스템은 세 가지를 계층적으로 결합한다: 넓은 검색(RAG), 구조적 연결(Graph), 깊은 축적(Wiki)."</p>
+    <cite>— Hybrid RAG Architecture Principle</cite>
+  </div>
+
+  <div class="stats z">
+    <div class="stat"><div class="stat-label">github repo</div><div class="stat-sub" style="font-size:12px;">rag-lab/ 클론 후 실습</div></div>
+    <div class="stat"><div class="stat-label">reference</div><div class="stat-sub" style="font-size:12px;">Karpathy Gist (2026.04)</div></div>
+    <div class="stat"><div class="stat-label">next class</div><div class="stat-sub" style="font-size:12px;">실습 결과 발표 & 토론</div></div>
+  </div>
+</div>
+
+</div><!-- /track -->
+</div><!-- /wrap -->
+
+<!-- BOTTOM BAR -->
+<div class="bar-b">
+  <button class="btn" onclick="go(-1)">◀ Prev</button>
+  <button class="btn" onclick="go(1)">Next ▶</button>
+  <div class="prog"><div class="prog-fill" id="pf"></div></div>
+  <div class="counter"><span id="cn">1</span> / <span id="ct"></span></div>
+  <div class="kbd">← →</div>
+</div>
+
+<script>
+const track=document.getElementById('track');
+const slides=[...track.children];
+const total=slides.length;
+let cur=0;
+document.getElementById('ct').textContent=total;
+
+function go(d){
+  cur=Math.max(0,Math.min(total-1,cur+d));
+  render();
+}
+function render(){
+  track.style.transform=`translateX(-${cur*100}%)`;
+  document.getElementById('pf').style.width=((cur+1)/total*100)+'%';
+  document.getElementById('cn').textContent=cur+1;
+  slides.forEach((s,i)=>{s.classList.toggle('active',i===cur);});
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')go(1);
+  if(e.key==='ArrowLeft')go(-1);
+  if(e.key==='Home'){cur=0;render();}
+  if(e.key==='End'){cur=total-1;render();}
+});
+
+// Touch support
+let tx=0;
+track.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;});
+track.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx;
+  if(Math.abs(dx)>50)go(dx<0?1:-1);
+});
+
+render();
+</script>
+</body>
+</html>
