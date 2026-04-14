@@ -1,0 +1,16 @@
+lightrag
+openai
+streamlit
+python-dotenv
+termcolor
+numpy
+tqdm
+langchain
+langchain-community
+tiktoken
+pymupdf
+pdfminer.six
+pyarrow
+fastapi
+ollama
+nest_asyncio 

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market Microstructure Lecture Deck Outline</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121933;
+      --panel-2: #182142;
+      --text: #eef3ff;
+      --muted: #a8b4d8;
+      --line: #2b3766;
+      --accent: #7aa2ff;
+      --accent-2: #8ef0d0;
+      --warn: #ffd580;
+      --shadow: 0 12px 30px rgba(0,0,0,.28);
+      --radius: 20px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, "Noto Sans KR", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: linear-gradient(180deg, #09101e 0%, #0d1430 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(122,162,255,.18), rgba(142,240,208,.10));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 28px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      color: var(--accent-2);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 5vw, 48px);
+      line-height: 1.1;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 17px;
+      max-width: 900px;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 22px;
+    }
+    .mini {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .mini .k {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .mini .v {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 22px 0 18px;
+    }
+    .tab {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    .tab.active, .tab:hover {
+      background: #1b2550;
+      border-color: #5778d8;
+    }
+    .deck { display: none; }
+    .deck.active { display: block; }
+    .section {
+      margin: 26px 0;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .section-head {
+      padding: 22px 24px 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .section-title {
+      margin: 0;
+      font-size: 24px;
+    }
+    .section-note {
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: 14px;
+    }
+    .slides {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .slide {
+      background: linear-gradient(180deg, var(--panel), var(--panel-2));
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+      min-height: 230px;
+    }
+    .slide-no {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(122,162,255,.18);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .slide h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.3;
+    }
+    .slide p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .slide ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #dbe4ff;
+      font-size: 14px;
+    }
+    .slide li + li { margin-top: 6px; }
+    .tagrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .tag {
+      font-size: 12px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      color: #d2dcff;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .formula {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.06);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--warn);
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    .legend {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .legend .mini { min-height: 130px; }
+    .footer {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 34px;
+      text-align: center;
+    }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="eyebrow">Lecture Slides Outline · HTML Draft</div>
+      <h1>Market Microstructure for ML and Trading</h1>
+      <div class="sub">
+        de Prado Chapter 19의 모든 핵심 수학 요소를 포함하고, 다양한 배경의 수강자가 따라올 수 있도록 직관·사례·적용을 함께 배치한 강의용 덱 아웃라인입니다. 본강의(Main Deck)와 수학 부록(Appendix Math Deck)으로 분리했습니다.
+      </div>
+      <div class="summary-grid">
+        <div class="mini"><div class="k">구성</div><div class="v">Main + Appendix</div></div>
+<div class="mini"><div class="k">범위</div><div class="v">de Prado + 2026 확장</div></div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-target="mainDeck">Main Deck</button>
+      <button class="tab" data-target="appendixDeck">Appendix Math Deck</button>
+    </div>
+
+    <div id="mainDeck" class="deck active">
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Part I. Opening & Market Basics</h2>
+          <div class="section-note">수강자가 수식에 들어가기 전에 거래 시스템, 주문 종류, adverse selection 직관을 먼저 이해하도록 설계</div>
+        </div>
+        <div class="slides">
+          <div class="slide"><div class="slide-no">1</div><h3>Title Slide</h3><p>강의 전체의 목적과 범위를 제시합니다.</p><ul><li>Market Microstructure for ML and Trading</li><li>de Prado Chapter 19 + recent extensions</li><li>직관 → 수식 → 적용 → 한계 순서</li></ul><div class="tagrow"><span class="tag">opening</span><span class="tag">course map</span></div></div>
+          <div class="slide"><div class="slide-no">2</div><h3>Why This Chapter Feels Hard</h3><p>왜 이 장이 처음에는 어렵게 느껴지는지 먼저 밝힙니다.</p><ul><li>주문/시장구조 배경지식 부족</li><li>수식이 바로 등장</li><li>각 추정치의 경제적 의미가 불명확</li></ul></div>
+          <div class="slide"><div class="slide-no">3</div><h3>What Is Market Microstructure?</h3><p>microstructure의 정의와 핵심 데이터 타입을 소개합니다.</p><ul><li>Orders, cancellations, queues, partial fills</li><li>FIX messages as granular data source</li><li>왜 predictive ML feature의 재료가 되는가</li></ul></div>
+          <div class="slide"><div class="slide-no">4</div><h3>Order Types and Trading Systems</h3><p>시장주문, 지정가주문, stop order와 order-driven / quote-driven 구조 비교</p><ul><li>누가 먼저 움직이는가</li><li>dealer market vs auction logic</li><li>이후 spread/impact 모델의 배경</li></ul></div>
+          <div class="slide"><div class="slide-no">5</div><h3>Adverse Selection Intuition</h3><p>“상대가 정보를 알고 있는가?”라는 질문이 spread와 impact의 근원임을 설명</p><ul><li>market maker의 위험</li><li>order flow가 단순 수요인지 정보인지 구분 불가</li><li>모든 후속 모델의 공통 배경</li></ul></div>
+          <div class="slide"><div class="slide-no">6</div><h3>Three Generations Map</h3><p>Chapter 19의 전체 구조를 한 장에서 보여줍니다.</p><ul><li>1st: price-only proxies</li><li>2nd: strategic trade / market impact</li><li>3rd: sequential informed trading</li></ul><div class="tagrow"><span class="tag">roadmap</span><span class="tag">taxonomy</span></div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Part II. First Generation: Price-Only Proxies</h2>
+          <div class="section-note">가격 또는 OHLC만으로 spread와 volatility를 추정하는 고전적 방법들</div>
+        </div>
+        <div class="slides">
+          <div class="slide"><div class="slide-no">7</div><h3>Tick Rule Intuition</h3><p>trade signing의 가장 단순한 방식</p><ul><li>up-tick → buyer initiated</li><li>down-tick → seller initiated</li><li>quote가 없을 때 signed flow의 출발점</li></ul><div class="formula">b_t = 1 if Δp_t &gt; 0
+b_t = -1 if Δp_t &lt; 0
+b_t = b_(t-1) if Δp_t = 0</div></div>
+          <div class="slide"><div class="slide-no">8</div><h3>Tick Rule Applications</h3><p>단순하지만 surprisingly useful한 이유를 설명</p><ul><li>Kalman filter expectation of trade sign</li><li>structural breaks</li><li>entropy, run tests, fractional differentiation</li></ul></div>
+          <div class="slide"><div class="slide-no">9</div><h3>Roll Model: Bid-Ask Bounce</h3><p>short-run negative autocovariance를 spread 추정에 연결</p><ul><li>mid-price process</li><li>transaction price = mid + trade sign × half-spread</li><li>trade bounce의 핵심 직관</li></ul><div class="formula">m_t = (p_t^b + p_t^a) / 2
+m_t = m_(t-1) + u_t
+p_t = m_t + b_t c</div></div>
+          <div class="slide"><div class="slide-no">10</div><h3>Roll Derivation and Recovery</h3><p>return covariance로부터 half-spread를 복원</p><ul><li>E(Δp_t Δp_(t-1)) = -c²</li><li>c from serial covariance</li><li>true price innovation variance 추정</li></ul><div class="formula">Δp_t = u_t + c(b_t - b_(t-1))
+E(Δp_t²) = σ_u² + 2c²
+E(Δp_t Δp_(t-1)) = -c²</div></div>
+          <div class="slide"><div class="slide-no">11</div><h3>Extended Roll</h3><p>inventory cost와 asymmetric information cost를 분리하는 관점</p><ul><li>public news shock + private information component</li><li>spread decomposition</li><li>identification issue 소개</li></ul><div class="formula">p_t = m_t + c b_t
+m_t = m_(t-1) + ff_t
+ff_t = λ b_t + v_t
+p_t = m_(t-1) + (λ + c)b_t + v_t</div></div>
+          <div class="slide"><div class="slide-no">12</div><h3>Parkinson High-Low Volatility</h3><p>OHLC 범위에서 latent volatility를 추정</p><ul><li>intraday range as volatility information</li><li>low-frequency datasets에 유용</li><li>spread/jump 오염 가능성도 함께 설명</li></ul><div class="formula">E[(1/T) Σ (log(H_t/L_t))²] = k · σ_HL</div></div>
+          <div class="slide"><div class="slide-no">13</div><h3>Corwin–Schultz Spread Proxy</h3><p>two-bar high-low 구조를 활용한 bid-ask spread proxy</p><ul><li>book data가 없을 때 강력</li><li>bond / opaque markets에도 적용 가능</li><li>H/L가 volatility + spread를 함께 반영</li></ul><div class="formula">S_t = 2(e^{α_t}-1)/(1+e^{α_t})
+α_t = f(β_t, γ_t)</div></div>
+          <div class="slide"><div class="slide-no">14</div><h3>Modern Update to First Generation</h3><p>최근 literature는 first-generation을 버린 것이 아니라 개선했습니다.</p><ul><li>better OHLC spread estimators</li><li>infrequent trading bias correction</li><li>낮은 빈도 데이터에서 여전히 중요</li></ul><div class="tagrow"><span class="tag">2024+</span><span class="tag">OHLC</span></div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Part III. Second Generation: Strategic Trade and Market Impact</h2>
+          <div class="section-note">가격만이 아니라 signed volume과 order flow imbalance가 가격을 어떻게 움직이는지 설명</div>
+        </div>
+        <div class="slides">
+          <div class="slide"><div class="slide-no">15</div><h3>Why Move Beyond Price?</h3><p>첫 세대는 friction을 가격에서 추정했고, 두 번째 세대는 flow가 price를 움직이는 메커니즘을 봅니다.</p><ul><li>order flow imbalance</li><li>market depth</li><li>adverse selection and impact</li></ul></div>
+          <div class="slide"><div class="slide-no">16</div><h3>Kyle Model Setup</h3><p>informed trader, noise trader, market maker의 삼자 구조</p><ul><li>market maker는 total flow만 관찰</li><li>price responds linearly to order flow</li><li>λ is inverse liquidity</li></ul><div class="formula">y = x + u
+p = λy + μ
+x = α + βv</div></div>
+          <div class="slide"><div class="slide-no">17</div><h3>Kyle Optimization</h3><p>informed trader의 최적 주문과 λ의 의미를 도출</p><ul><li>mispricing exploitation</li><li>noise trade concealment</li><li>lower λ = deeper market</li></ul><div class="formula">π = (v - p)x
+x = (v - μ - λu)/(2λ)
+α = -μ/(2λ), β = 1/(2λ)</div></div>
+          <div class="slide"><div class="slide-no">18</div><h3>Kyle Empirical Regression</h3><p>실증에서는 signed volume 회귀로 연결</p><ul><li>Δp_t on b_t V_t</li><li>execution fragility indicator</li><li>small cap / event windows에 직관적</li></ul><div class="formula">Δp_t = λ(b_t V_t) + ε_t</div></div>
+          <div class="slide"><div class="slide-no">19</div><h3>Amihud Illiquidity</h3><p>daily 데이터에서 가장 실용적인 price impact proxy 중 하나</p><ul><li>absolute return per dollar volume</li><li>cross-market screening에 적합</li><li>intraday data가 없을 때 강력</li></ul><div class="formula">|Δ log p_t^c| = λ Σ_{t∈B_τ} p_t v_t + ε_t</div></div>
+          <div class="slide"><div class="slide-no">20</div><h3>Hasbrouck Lambda</h3><p>intraday effective trading cost approximation</p><ul><li>5-minute bars recommendation</li><li>signed sqrt-dollar-volume impact</li><li>execution desk use case에 적합</li></ul><div class="formula">log(p_{i,τ}) - log(p_{i-1,τ}) = λ_i Σ (b_{i,t} √(p_{i,t} V_{i,t})) + ε_{i,t}</div></div>
+          <div class="slide"><div class="slide-no">21</div><h3>Kyle vs Amihud vs Hasbrouck</h3><p>“어떤 λ를 쓸 것인가?”를 과업 기준으로 정리</p><ul><li>theory richness</li><li>data availability</li><li>execution vs portfolio research</li></ul></div>
+          <div class="slide"><div class="slide-no">22</div><h3>2025 Update: ML + Liquidity Estimation</h3><p>theory-based liquidity estimators와 ML의 결합</p><ul><li>classical features still matter</li><li>daily data + nonlinear models</li><li>microstructure theory is not replaced, but upgraded</li></ul><div class="tagrow"><span class="tag">2025</span><span class="tag">ML</span></div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Part IV. Third Generation: Sequential Informed Trading</h2>
+          <div class="section-note">거래가 순차적으로 도착하는 환경에서 정보거래와 toxicity를 추정하는 접근</div>
+        </div>
+        <div class="slides">
+          <div class="slide"><div class="slide-no">23</div><h3>Sequential Model Intuition</h3><p>market maker가 거래 흐름을 보며 동적으로 가격을 갱신하는 상황</p><ul><li>not just large trades</li><li>informed vs uninformed arrivals</li><li>adverse selection made explicit</li></ul></div>
+          <div class="slide"><div class="slide-no">24</div><h3>PIN Model Tree Logic</h3><p>news arrival probability와 trader arrival rates로 informed trading probability를 구성</p><ul><li>α: news event probability</li><li>δ: good/bad news split</li><li>μ, ε: informed / uninformed arrival rates</li></ul></div>
+          <div class="slide"><div class="slide-no">25</div><h3>PIN Math and Quote Setting</h3><p>market maker가 손실을 피하기 위해 bid/ask를 어떻게 설정하는지 설명</p><ul><li>expected terminal value</li><li>bid / ask adjustment</li><li>MLE estimation idea</li></ul><div class="formula">E[S_1] = (1-α)S_0 + α(δS_B + (1-δ)S_G)
+PIN = αμ / (αμ + 2ε)</div></div>
+          <div class="slide"><div class="slide-no">26</div><h3>PIN Interpretation</h3><p>“현재 거래 중 어느 정도가 정보를 가진 거래일까?”</p><ul><li>takeover rumor case</li><li>one-sided order flow</li><li>market maker caution</li></ul></div>
+          <div class="slide"><div class="slide-no">27</div><h3>VPIN and Volume Time</h3><p>calendar time 대신 volume clock으로 toxicity를 추적</p><ul><li>equal-volume buckets</li><li>flow imbalance as liquidity-stress signal</li><li>flash-crash narrative connection</li></ul><div class="formula">VPIN_t = Σ|V_τ^B - V_τ^S| / Σ(V_τ^B + V_τ^S)</div></div>
+          <div class="slide"><div class="slide-no">28</div><h3>PIN vs VPIN</h3><p>structural daily metric과 high-frequency rolling metric을 비교</p><ul><li>PIN: slower, model-based</li><li>VPIN: faster, imbalance-based</li><li>task-dependent choice</li></ul></div>
+          <div class="slide"><div class="slide-no">29</div><h3>Modern Caution on VPIN</h3><p>최근 연구는 realized imbalance보다 latent book shape가 더 informative할 수 있음을 시사</p><ul><li>toxicity ≠ full story</li><li>latent supply-demand slope matters</li><li>volatility prediction task에서 비교 필요</li></ul><div class="tagrow"><span class="tag">2025</span><span class="tag">LOB</span></div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Part V. Practical ML Features from Chapter 19</h2>
+          <div class="section-note">textbook 마지막 부분의 실전 feature 아이디어를 보다 폭넓은 강의 청중에 맞게 재배치</div>
+        </div>
+        <div class="slides">
+          <div class="slide"><div class="slide-no">30</div><h3>Round-Sized Trades</h3><p>사람과 알고리즘의 execution style 차이를 feature로</p><ul><li>10, 50, 100, 250 lots clustering</li><li>GUI / human discretion signals</li><li>trend conviction proxy</li></ul><div class="formula">feature = #round-sized trades / #non-round-sized trades</div></div>
+          <div class="slide"><div class="slide-no">31</div><h3>Cancellation Rates</h3><p>보이는 유동성과 실제 유동성의 괴리를 드러내는 변수</p><ul><li>fragile liquidity</li><li>quote flickering</li><li>book instability / spoof-like behavior</li></ul></div>
+          <div class="slide"><div class="slide-no">32</div><h3>TWAP / VWAP Footprints</h3><p>institutional slicing algorithm의 흔적을 탐지</p><ul><li>beginning-of-minute imbalance</li><li>chronological execution pattern</li><li>HFT anticipation possibility</li></ul></div>
+          <div class="slide"><div class="slide-no">33</div><h3>Option-Market Features</h3><p>주식과 옵션 가격 간 괴리에서 정보 추출</p><ul><li>Greeks across strikes and maturities</li><li>stock-option disagreement</li><li>put-call implied by stock quote</li></ul></div>
+          <div class="slide"><div class="slide-no">34</div><h3>Signed Order Flow Autocorrelation</h3><p>positive serial correlation이 herding보다 order splitting일 수 있음</p><ul><li>few-day persistence</li><li>order splitting evidence</li><li>short-horizon predictive interpretation</li></ul></div>
+          <div class="slide"><div class="slide-no">35</div><h3>Feature Engineering Map</h3><p>전체 feature를 네 개의 경제적 bucket으로 요약</p><ul><li>spread / cost</li><li>impact / depth</li><li>toxicity / informed flow</li><li>execution footprints</li></ul></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Part VI. Recent Literature and Closing</h2>
+          <div class="section-note">교과서 이후의 발전을 task-based taxonomy로 정리</div>
+        </div>
+        <div class="slides">
+          <div class="slide"><div class="slide-no">36</div><h3>What Changed After the Textbook?</h3><p>“지표를 추정할 수 있는가?”에서 “어느 과업에 어느 지표가 유효한가?”로 초점 이동</p><ul><li>execution cost</li><li>risk monitoring</li><li>alpha extraction</li></ul></div>
+          <div class="slide"><div class="slide-no">37</div><h3>Deep LOB Forecasting</h3><p>accuracy와 tradability가 다르다는 점을 분명히 보여주는 modern line</p><ul><li>same classifier accuracy, different PnL</li><li>spread, fills, queue stability matter</li><li>microstructure-aware evaluation 필요</li></ul></div>
+          <div class="slide"><div class="slide-no">38</div><h3>Unified Order Flow / Impact / Volatility</h3><p>flow persistence가 impact와 rough volatility를 함께 만든다는 최근 시각</p><ul><li>split orders</li><li>reaction flow</li><li>volatility as digestion of flow</li></ul><div class="tagrow"><span class="tag">2026</span><span class="tag">unified theory</span></div></div>
+          <div class="slide"><div class="slide-no">39</div><h3>Which Measure for Which Task?</h3><p>수강자가 논문을 읽고 스스로 metric을 고를 수 있게 하는 decision slide</p><ul><li>OHLC only → Roll / CS / improved OHLC</li><li>Daily OHLCV → Amihud + ML enhancement</li><li>Intraday trades → Kyle / Hasbrouck</li><li>LOB / toxicity → PIN / VPIN / latent book</li></ul></div>
+          <div class="slide"><div class="slide-no">40</div><h3>Final Takeaway</h3><p>공식을 외우는 것이 아니라 hidden state를 파악하는 것이 목표</p><ul><li>무엇을 추정하는가</li><li>어떤 데이터가 필요한가</li><li>어디에 쓰는가</li><li>무슨 한계가 있는가</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="appendixDeck" class="deck">
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Appendix Math Deck</h2>
+          <div class="section-note">PDF의 수학을 빠짐없이 정리하는 부록. MBA·특수대학원 강의, 대학원 세미나, handout, 수업 후 복습 자료에 적합</div>
+        </div>
+        <div class="slides">
+          <div class="slide"><div class="slide-no">A1</div><h3>Symbol Dictionary</h3><p>수강자가 전체 강의 동안 반복해서 참조할 수 있는 notation sheet</p><ul><li>p_t, m_t, b_t, c</li><li>λ, μ, ε, α, δ</li><li>V^B, V^S, H_t, L_t</li></ul></div>
+          <div class="slide"><div class="slide-no">A2</div><h3>Tick Rule Full Formula</h3><div class="formula">b_t = 1, if Δp_t &gt; 0
+b_t = -1, if Δp_t &lt; 0
+b_t = b_(t-1), if Δp_t = 0
+b_0 = 1</div><p class="muted">trade sign construction without quote data</p></div>
+          <div class="slide"><div class="slide-no">A3</div><h3>Roll Setup</h3><div class="formula">m_t = (p_t^b + p_t^a)/2
+m_t = m_(t-1) + u_t, u_t ~ iid N(0, σ_u²)
+p_t = m_t + b_t c, b_t ∈ {-1,1}</div></div>
+          <div class="slide"><div class="slide-no">A4</div><h3>Roll Moments</h3><div class="formula">Δp_t = u_t + c(b_t - b_(t-1))
+Δp_t² = u_t² + c²(b_t² + b_(t-1)² - 2b_t b_(t-1))
+E(Δp_t²) = σ_u² + 2c²
+E(Δp_t Δp_(t-1)) = -c²</div></div>
+          <div class="slide"><div class="slide-no">A5</div><h3>Roll Recovery</h3><div class="formula">c = sqrt(max(E(Δp_t Δp_(t-1)), 0))
+σ_u² = E(Δp_t²) + 2c²</div></div>
+          <div class="slide"><div class="slide-no">A6</div><h3>Extended Roll Setup</h3><div class="formula">p_t = m_t + c b_t
+m_t = m_(t-1) + ff_t
+ff_t = λ b_t + v_t
+p_t = m_(t-1) + (λ + c)b_t + v_t</div></div>
+          <div class="slide"><div class="slide-no">A7</div><h3>Extended Roll Bid / Ask</h3><div class="formula">p_t^B = m_(t-1) - (λ + c) + v_t
+p_t^A = m_(t-1) + (λ + c) + v_t
+p_t^A - p_t^B = 2(λ + c)</div></div>
+          <div class="slide"><div class="slide-no">A8</div><h3>Extended Roll Moments</h3><div class="formula">Δp_t = -c b_(t-1) + (λ + c)b_t + v_t
+E(Δp_t²) = c² + (c + λ)² + σ_v²
+E(Δp_t Δp_(t-1)) = -c(c + λ)</div></div>
+          <div class="slide"><div class="slide-no">A9</div><h3>Identification Equation</h3><div class="formula">Var(w_t) = λ² + σ_v² = γ_0 + 2γ_1</div><p class="muted">장기구간에서 microstructure effects dissipate 가정과 함께 사용</p></div>
+          <div class="slide"><div class="slide-no">A10</div><h3>Parkinson High-Low</h3><div class="formula">dp_t = μdt + σp_tdw_t
+E[(1/T)Σ(log(H_t/L_t))²] = k_1 σ_HL,  k_1 = 4 log 2
+E[(1/T)Σ(log(H_t/L_t))²] = k_2 σ_HL,  k_2 = √(8/π)</div></div>
+          <div class="slide"><div class="slide-no">A11</div><h3>Corwin–Schultz</h3><div class="formula">100 × BAS_t / p_t ≡ S_t = 2(e^{α_t}-1)/(1+e^{α_t})
+α_t = (√(2β_t)-√β_t)/(3-2√2) - √(γ_t/(3-2√2))
+β_t = E[ Σ_{j=0}^1 (log(H_(t-j)/L_(t-j)))² ]
+γ_t = (log(H_(t-1,t)/L_(t-1,t)))²</div></div>
+          <div class="slide"><div class="slide-no">A12</div><h3>Kyle Model Core Equations</h3><div class="formula">v = N(p, Σ)
+u = N(0, σ_u²)
+y = x + u
+p = λy + μ
+x = α + βv</div></div>
+          <div class="slide"><div class="slide-no">A13</div><h3>Kyle Optimization Result</h3><div class="formula">π = (v - p)x
+x = (v - μ - λu)/(2λ)
+α = -μ/(2λ)
+β = 1/(2λ)</div></div>
+          <div class="slide"><div class="slide-no">A14</div><h3>Kyle Empirical Estimation</h3><div class="formula">Δp_t = λ(b_t V_t) + ε_t</div></div>
+          <div class="slide"><div class="slide-no">A15</div><h3>Amihud Lambda</h3><div class="formula">|Δ log p_t^c| = λ Σ_{t∈B_τ} p_t v_t + ε_t</div></div>
+          <div class="slide"><div class="slide-no">A16</div><h3>Hasbrouck Lambda</h3><div class="formula">log(p_{i,τ}) - log(p_{i-1,τ}) = λ_i Σ_{t∈B_{i,τ}} (b_{i,t} √(p_{i,t}V_{i,t})) + ε_{i,t}</div></div>
+          <div class="slide"><div class="slide-no">A17</div><h3>PIN Expected Value</h3><div class="formula">E[S_1] = (1-α)S_0 + α(δS_B + (1-δ)S_G)</div></div>
+          <div class="slide"><div class="slide-no">A18</div><h3>PIN Bid and Ask</h3><div class="formula">E(B_t) = E(S_t) - [μ α_t δ_t / (ε + μ α_t δ_t)] (E(S_t) - S_B)
+E(A_t) = E(S_t) + [μ α_t (1-δ_t) / (ε + μ α_t (1-δ_t))] (S_G - E(S_t))</div></div>
+          <div class="slide"><div class="slide-no">A19</div><h3>PIN Core Formula</h3><div class="formula">If δ_t = 1/2,
+E(A_t - B_t) = [α_t μ / (α_t μ + ε)] (S_G - S_B)
+PIN = αμ / (αμ + 2ε)</div></div>
+          <div class="slide"><div class="slide-no">A20</div><h3>PIN Volume Relation</h3><div class="formula">E(V^B - V^S) = αμ(1 - 2δ) ≈ αμ</div></div>
+          <div class="slide"><div class="slide-no">A21</div><h3>VPIN Formula</h3><div class="formula">VPIN_t = [Σ_{τ=1}^n |V_τ^B - V_τ^S|] / [Σ_{τ=1}^n (V_τ^B + V_τ^S)]
+= [Σ_{τ=1}^n |V_τ^B - V_τ^S|] / (nV)</div></div>
+          <div class="slide"><div class="slide-no">A22</div><h3>Round-Size Feature</h3><div class="formula">Round-size ratio = number of round-sized trades per day / number of non-round-sized trades per day</div></div>
+          <div class="slide"><div class="slide-no">A23</div><h3>Estimator Comparison Sheet</h3><p>Tick, Roll, Ext Roll, Parkinson, CS, Kyle, Amihud, Hasbrouck, PIN, VPIN을 한 표에서 비교</p><ul><li>Data</li><li>Hidden object inferred</li><li>Horizon</li><li>Use case</li></ul></div>
+          <div class="slide"><div class="slide-no">A24</div><h3>Common Confusions</h3><ul><li>spread ≠ impact</li><li>impact ≠ toxicity</li><li>signed flow ≠ informed flow</li><li>volatility ≠ illiquidity</li></ul></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Part VII. Paper Review Companion</h2>
+          <div class="section-note">논문 리뷰용으로 바로 전환할 수 있도록, 각 모델에 대해 “언제 적용하는가”와 “직관적 사례”를 붙인 섹션</div>
+        </div>
+        <div class="slides">
+          <div class="slide"><div class="slide-no">41</div><h3>How to Read a Microstructure Paper</h3><p>논문을 읽을 때 항상 같은 질문을 던지게 하는 review frame</p><ul><li>What hidden object is inferred?</li><li>What data are required?</li><li>What decision does it support?</li><li>What can go wrong in implementation?</li></ul></div>
+          <div class="slide"><div class="slide-no">42</div><h3>Roll Model Review Case</h3><p>“호가가 없는 시장에서 spread를 어떻게 추정할까?”라는 질문에 적합</p><ul><li>Case: historical corporate bond panel</li><li>Observed issue: price bounce but no quote data</li><li>Use: effective spread proxy for liquidity screening</li></ul></div>
+          <div class="slide"><div class="slide-no">43</div><h3>Kyle Model Review Case</h3><p>“같은 거래량인데 왜 어떤 종목은 더 크게 움직일까?”를 설명하는 대표 사례</p><ul><li>Case: small-cap around earnings</li><li>Observed issue: medium-sized buy order triggers outsized jump</li><li>Use: fragility, depth, event-window execution risk</li></ul></div>
+          <div class="slide"><div class="slide-no">44</div><h3>Amihud Review Case</h3><p>daily 데이터만 있는 광범위한 시장 비교에 가장 실용적</p><ul><li>Case: cross-country stock universe</li><li>Observed issue: no intraday book, only OHLCV</li><li>Use: illiquidity sorting, liquidity premium studies</li></ul></div>
+          <div class="slide"><div class="slide-no">45</div><h3>Hasbrouck Review Case</h3><p>execution desk가 실제 거래비용을 추정할 때 더 직접적</p><ul><li>Case: intraday ETF execution</li><li>Observed issue: same daily volume, different short-run impact</li><li>Use: effective cost approximation and desk monitoring</li></ul></div>
+          <div class="slide"><div class="slide-no">46</div><h3>PIN Review Case</h3><p>정보비대칭이 실제로 높은지를 이해하는 직관적 사례</p><ul><li>Case: takeover rumor stock</li><li>Observed issue: repeated one-sided buy arrivals</li><li>Use: informed-flow suspicion and market-maker caution</li></ul></div>
+          <div class="slide"><div class="slide-no">47</div><h3>VPIN Review Case</h3><p>달력시간보다 volume time이 더 적절한 순간을 보여주는 사례</p><ul><li>Case: index futures panic selloff</li><li>Observed issue: massive toxic flow in short bursts</li><li>Use: liquidity withdrawal and stress monitoring</li></ul></div>
+          <div class="slide"><div class="slide-no">48</div><h3>Deep LOB Review Case</h3><p>정확도가 높아도 수익이 나지 않을 수 있다는 점을 가르치기 가장 좋음</p><ul><li>Case: two stocks with same classifier accuracy</li><li>Observed issue: one has tight spread and fills, the other does not</li><li>Use: tradability-aware evaluation</li></ul></div>
+          <div class="slide"><div class="slide-no">49</div><h3>Modern OHLC Estimator Review Case</h3><p>교과서 이후 low-frequency estimator가 어떻게 개선되었는지 보여줌</p><ul><li>Case: infrequently traded emerging-market stocks</li><li>Observed issue: older estimators understate spread</li><li>Use: improved low-frequency liquidity measurement</li></ul></div>
+          <div class="slide"><div class="slide-no">50</div><h3>Unified Flow-Impact-Volatility Review Case</h3><p>최근 연구가 flow persistence를 통해 impact와 volatility를 묶는 방식을 소개</p><ul><li>Case: meta-order splitting over the day</li><li>Observed issue: persistent signed flow and rough volatility co-move</li><li>Use: dynamic microstructure state interpretation</li></ul></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2 class="section-title">Part VIII. Speaker Notes and Teaching Prompts</h2>
+          <div class="section-note">강의자가 바로 설명을 붙일 수 있도록 자주 필요한 teaching prompt를 별도 정리</div>
+        </div>
+        <div class="slides">
+          <div class="slide"><div class="slide-no">T1</div><h3>Teaching Prompt: Tick Rule</h3><p>강의 초반에 먼저 던질 질문</p><ul><li>“호가가 없으면 누가 공격적 매수자인지 어떻게 알까?”</li><li>“가격이 올랐다는 사실 자체를 aggressor sign의 힌트로 볼 수 있나?”</li><li>“왜 거칠지만 여전히 유용할까?”</li></ul></div>
+          <div class="slide"><div class="slide-no">T2</div><h3>Teaching Prompt: Roll</h3><p>공분산 수식보다 먼저 bid-ask bounce를 체감시키기</p><ul><li>“진짜 정보가 없는데도 가격이 위아래로 튈 수 있나?”</li><li>“그 튐이 정보가 아니라 spread라면?”</li><li>“왜 직전 수익률과 다음 수익률이 음의 관계를 가질까?”</li></ul></div>
+          <div class="slide"><div class="slide-no">T3</div><h3>Teaching Prompt: Kyle</h3><p>impact를 depth와 연결하는 설명용 질문</p><ul><li>“같은 1만 주 주문이 왜 어떤 시장에서는 아무 일도 아니고 어떤 시장에서는 큰 사건이 될까?”</li><li>“λ가 작다는 말은 무슨 뜻인가?”</li></ul></div>
+          <div class="slide"><div class="slide-no">T4</div><h3>Teaching Prompt: PIN</h3><p>PIN을 최대한 쉬운 언어로 번역</p><ul><li>“지금 들어오는 거래 중 얼마나 많은 비중이 정보를 가지고 있을까?”</li><li>“market maker는 이 확률을 높게 보면 어떤 행동을 할까?”</li></ul></div>
+          <div class="slide"><div class="slide-no">T5</div><h3>Teaching Prompt: VPIN</h3><p>volume clock의 필요성을 체감시키는 질문</p><ul><li>“5분이 지났다는 사실과 5천만 달러가 거래됐다는 사실 중 무엇이 더 중요할까?”</li><li>“매우 바쁜 장에서는 calendar time이 왜 둔감할까?”</li></ul></div>
+          <div class="slide"><div class="slide-no">T6</div><h3>Teaching Prompt: Practical Features</h3><p>교과서 후반부의 feature를 ‘행동 흔적’으로 묶어서 설명</p><ul><li>round-size = 사람 흔적</li><li>cancellations = 가짜 유동성 가능성</li><li>TWAP/VWAP footprint = 큰 주문의 쪼개진 발자국</li><li>signed-flow autocorrelation = herding이 아니라 splitting일 수도 있음</li></ul></div>
+        </div>
+      </div>
+
+      <div class="legend">
+      <div class="mini"><div class="k">Main Deck</div><div class="v">50 slides</div><div class="muted">직관, 사례, 적용 중심. 다양한 배경의 수강자가 따라오게 만드는 본문용</div></div>
+      <div class="mini"><div class="k">Appendix Math</div><div class="v">24 slides</div><div class="muted">수식 정리, notation sheet, handout, 복습용</div></div>
+      <div class="mini"><div class="k">추가 포함</div><div class="v">Paper Review + Teaching Prompts</div><div class="muted">논문 리뷰와 실제 강의 진행에 바로 쓸 수 있는 companion section</div></div>
+    </div>
+
+    <div class="footer">Prepared as an HTML lecture-outline draft for iterative slide development.</div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const decks = document.querySelectorAll('.deck');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        decks.forEach(d => d.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

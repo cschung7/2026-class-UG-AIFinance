@@ -1,0 +1,14 @@
+langchain
+langchain_community
+streamlit
+gradio
+chromadb
+termcolor
+python-dotenv
+pymupdf
+sentence-transformers
+fastapi
+uvicorn
+python-multipart
+pydantic
+ollama 

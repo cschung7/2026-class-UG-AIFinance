@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oil Market RAG Analysis System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.5.0/dist/full.css" rel="stylesheet" type="text/css" />
+    <!-- Anime.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Custom script for dark mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {},
+            },
+            daisyui: {
+                themes: ["dark"]
+            }
+        }
+    </script>
+    <style>
+        .loading-dots span {
+            animation: bounce 1.5s infinite;
+        }
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        #response-container {
+            transition: all 0.3s ease-in-out;
+        }
+        .typing-animation::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen">
+    <!-- Header -->
+    <header class="w-full py-6 bg-gray-800 shadow-xl">
+        <div class="container mx-auto px-4">
+            <h1 class="text-3xl font-bold text-center text-green-400">
+                🛢️ Oil Market RAG Analysis System
+            </h1>
+            <p class="text-center mt-2 text-gray-400">
+                Query research papers on oil markets using Retrieval Augmented Generation
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Configuration Panel -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-6">
+                <h2 class="text-xl font-semibold mb-4 text-green-400">📋 Configuration</h2>
+                
+                <form id="config-form" class="space-y-6">
+                    <!-- PDF Selection -->
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Choose PDF Source</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="pdfOption" value="Use default PDF" checked class="radio radio-success" />
+                                <span class="ml-2">Use default PDF</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="pdfOption" value="Upload custom PDF" class="radio radio-success" />
+                                <span class="ml-2">Upload custom PDF</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- File Upload -->
+                    <div id="file-upload-container" class="hidden">
+                        <label class="block text-sm font-medium mb-2">Upload PDF</label>
+                        <input type="file" id="pdf-file" accept=".pdf" class="file-input file-input-bordered file-input-success w-full" />
+                    </div>
+                    
+                    <!-- Model Parameters -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-3 text-green-400">Model Parameters</h3>
+                        
+                        <!-- LLM Model Selection -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">LLM Model</label>
+                            <select id="llm-model" class="select select-bordered select-success w-full">
+                                <option value="llama3">llama3</option>
+                                <option value="mistral">mistral</option>
+                                <option value="gemma">gemma</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Temperature -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">
+                                Temperature: <span id="temperature-value">0.2</span>
+                            </label>
+                            <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.2" 
+                                class="range range-success range-sm" />
+                        </div>
+                        
+                        <!-- Number of Chunks -->
+                        <div>
+                            <label class="block text-sm font-medium mb-2">
+                                Number of chunks to retrieve: <span id="chunks-value">4</span>
+                            </label>
+                            <input type="range" id="n-results" min="1" max="10" step="1" value="4" 
+                                class="range range-success range-sm" />
+                        </div>
+                    </div>
+                    
+                    <!-- Process Button -->
+                    <button type="button" id="process-btn" class="btn btn-success w-full">
+                        Process Document & Initialize System
+                    </button>
+                </form>
+                
+                <!-- Status Display -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium mb-2">System Status</h3>
+                    <div id="status-display" class="bg-gray-900 rounded p-4 h-48 overflow-y-auto text-sm">
+                        <p class="text-gray-400">System not initialized. Configure and process a document to start.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Query Section -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-6 lg:col-span-2">
+                <div id="query-container" class="hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-green-400">🔍 Ask Questions About the Document</h2>
+                    
+                    <div class="mb-4">
+                        <textarea id="query-input" rows="3" placeholder="What are the main factors affecting oil prices during the pandemic?" 
+                            class="textarea textarea-bordered w-full bg-gray-900"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-between mb-6">
+                        <button id="query-btn" class="btn btn-success">Submit Query</button>
+                        <div class="dropdown dropdown-end">
+                            <label tabindex="0" class="btn btn-outline btn-success">Example Questions</label>
+                            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-gray-800 rounded-box w-96">
+                                <li class="example-question"><a>What were the main factors affecting oil prices during the pandemic?</a></li>
+                                <li class="example-question"><a>How did the Russia-Ukraine war impact the oil market?</a></li>
+                                <li class="example-question"><a>What are the projections for future oil demand?</a></li>
+                                <li class="example-question"><a>What supply shocks affected the oil market?</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading Animation -->
+                    <div id="loading-animation" class="hidden py-8 flex justify-center">
+                        <div class="loading-dots flex space-x-2">
+                            <span class="h-4 w-4 bg-green-400 rounded-full"></span>
+                            <span class="h-4 w-4 bg-green-400 rounded-full"></span>
+                            <span class="h-4 w-4 bg-green-400 rounded-full"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Answer Display -->
+                    <div id="response-container" class="border border-gray-700 rounded-lg p-6 bg-gray-900 min-h-[300px] overflow-y-auto hidden">
+                        <div id="answer-display" class="prose prose-invert max-w-none"></div>
+                    </div>
+                </div>
+                
+                <div id="not-initialized-message" class="flex items-center justify-center h-80">
+                    <div class="text-center">
+                        <div class="text-6xl mb-4">🔍</div>
+                        <h3 class="text-xl font-medium mb-2 text-green-400">System Not Initialized</h3>
+                        <p class="text-gray-400">Process a document to start asking questions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // DOM Elements
+        const pdfOptions = document.querySelectorAll('input[name="pdfOption"]');
+        const fileUploadContainer = document.getElementById('file-upload-container');
+        const temperatureSlider = document.getElementById('temperature');
+        const temperatureValue = document.getElementById('temperature-value');
+        const chunksSlider = document.getElementById('n-results');
+        const chunksValue = document.getElementById('chunks-value');
+        const processBtn = document.getElementById('process-btn');
+        const statusDisplay = document.getElementById('status-display');
+        const queryContainer = document.getElementById('query-container');
+        const notInitializedMsg = document.getElementById('not-initialized-message');
+        const queryBtn = document.getElementById('query-btn');
+        const queryInput = document.getElementById('query-input');
+        const answerDisplay = document.getElementById('answer-display');
+        const responseContainer = document.getElementById('response-container');
+        const loadingAnimation = document.getElementById('loading-animation');
+        const exampleQuestions = document.querySelectorAll('.example-question');
+
+        // Show/hide file upload based on PDF option
+        pdfOptions.forEach(option => {
+            option.addEventListener('change', function() {
+                if (this.value === 'Upload custom PDF') {
+                    fileUploadContainer.classList.remove('hidden');
+                } else {
+                    fileUploadContainer.classList.add('hidden');
+                }
+            });
+        });
+
+        // Update slider values
+        temperatureSlider.addEventListener('input', function() {
+            temperatureValue.textContent = this.value;
+        });
+
+        chunksSlider.addEventListener('input', function() {
+            chunksValue.textContent = this.value;
+        });
+
+        // Process document
+        processBtn.addEventListener('click', async function() {
+            try {
+                // Disable process button
+                processBtn.disabled = true;
+                processBtn.textContent = 'Processing...';
+                
+                // Reset status display
+                statusDisplay.innerHTML = '<p class="text-blue-400">🔄 Starting document processing...</p>';
+                
+                // Prepare form data
+                const formData = new FormData();
+                formData.append('pdf_option', document.querySelector('input[name="pdfOption"]:checked').value);
+                formData.append('llm_model', document.getElementById('llm-model').value);
+                formData.append('temperature', temperatureSlider.value);
+                formData.append('n_results', chunksSlider.value);
+                
+                // If custom PDF, add file
+                if (document.querySelector('input[name="pdfOption"]:checked').value === 'Upload custom PDF') {
+                    const pdfFile = document.getElementById('pdf-file').files[0];
+                    if (pdfFile) {
+                        formData.append('pdf_file', pdfFile);
+                    } else {
+                        statusDisplay.innerHTML += '<p class="text-red-400">❌ Error: No file selected</p>';
+                        processBtn.disabled = false;
+                        processBtn.textContent = 'Process Document & Initialize System';
+                        return;
+                    }
+                }
+                
+                // Send request to process document
+                await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // Start polling status
+                pollStatus();
+                
+            } catch (error) {
+                statusDisplay.innerHTML += `<p class="text-red-400">❌ Error: ${error.message}</p>`;
+                processBtn.disabled = false;
+                processBtn.textContent = 'Process Document & Initialize System';
+            }
+        });
+
+        // Poll status until initialized
+        async function pollStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                
+                // Update status display
+                statusDisplay.innerHTML = '';
+                data.status.forEach(status => {
+                    statusDisplay.innerHTML += `<p>${status}</p>`;
+                });
+                
+                // Scroll to bottom of status display
+                statusDisplay.scrollTop = statusDisplay.scrollHeight;
+                
+                // If initialized, enable query section
+                if (data.initialized) {
+                    queryContainer.classList.remove('hidden');
+                    notInitializedMsg.classList.add('hidden');
+                    processBtn.disabled = false;
+                    processBtn.textContent = 'Process Document & Initialize System';
+                    return;
+                }
+                
+                // Otherwise, continue polling
+                setTimeout(pollStatus, 1000);
+                
+            } catch (error) {
+                statusDisplay.innerHTML += `<p class="text-red-400">❌ Error: ${error.message}</p>`;
+                processBtn.disabled = false;
+                processBtn.textContent = 'Process Document & Initialize System';
+            }
+        }
+
+        // Query submission
+        queryBtn.addEventListener('click', async function() {
+            const question = queryInput.value.trim();
+            if (question === '') return;
+            
+            try {
+                // Show loading and hide previous answer
+                loadingAnimation.classList.remove('hidden');
+                responseContainer.classList.add('hidden');
+                
+                // Disable query button
+                queryBtn.disabled = true;
+                
+                // Create response container animation
+                answerDisplay.textContent = '';
+                responseContainer.classList.remove('hidden');
+                
+                // Stream response
+                const response = await fetch('/query/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: question
+                    })
+                });
+                
+                // Hide loading animation
+                loadingAnimation.classList.add('hidden');
+                
+                // Read stream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                // Animate answer appearing
+                let fullText = '';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const text = decoder.decode(value);
+                    fullText += text;
+                    
+                    // Update display with typing animation
+                    answerDisplay.innerHTML = fullText;
+                    answerDisplay.classList.add('typing-animation');
+                    
+                    // Scroll to bottom of response
+                    responseContainer.scrollTop = responseContainer.scrollHeight;
+                }
+                
+                // Remove typing animation when done
+                answerDisplay.classList.remove('typing-animation');
+                
+                // Re-enable query button
+                queryBtn.disabled = false;
+                
+            } catch (error) {
+                answerDisplay.innerHTML = `<p class="text-red-400">❌ Error: ${error.message}</p>`;
+                loadingAnimation.classList.add('hidden');
+                responseContainer.classList.remove('hidden');
+                queryBtn.disabled = false;
+            }
+        });
+
+        // Example questions
+        exampleQuestions.forEach(question => {
+            question.addEventListener('click', function() {
+                queryInput.value = this.querySelector('a').textContent;
+                // Scroll to query input
+                queryInput.scrollIntoView({ behavior: 'smooth' });
+                queryInput.focus();
+            });
+        });
+    </script>
+</body>
+</html> 

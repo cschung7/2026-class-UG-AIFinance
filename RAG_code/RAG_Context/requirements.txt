@@ -1,0 +1,9 @@
+langchain
+langchain_community
+sentence-transformers
+rank-bm25
+numpy
+tqdm
+termcolor
+python-dotenv
+chromadb 
