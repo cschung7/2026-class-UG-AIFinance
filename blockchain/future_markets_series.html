@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Future of Financial Markets — Series</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&family=JetBrains+Mono:wght@300;400;500;700&family=Inter+Tight:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #0a0e17;
+    --bg-deep: #060912;
+    --panel: #0f1524;
+    --panel-2: #131a2c;
+    --ink: #e8eef7;
+    --ink-dim: #8a96ad;
+    --ink-faint: #4a5568;
+    --line: #1f2940;
+    --line-bright: #2a3654;
+    --accent: #ffb454;
+    --accent-2: #6dd3ff;
+    --accent-3: #ff6b9d;
+    --accent-4: #7ee787;
+    --accent-5: #c084fc;
+    --grid: rgba(255, 255, 255, 0.025);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-deep);
+    color: var(--ink);
+    font-family: 'Inter Tight', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 0%, rgba(255, 180, 84, 0.08), transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(109, 211, 255, 0.06), transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ============= HUD ============= */
+.hud {
+    position: fixed;
+    z-index: 100;
+    color: var(--ink-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    pointer-events: none;
+}
+.hud-tl { top: 24px; left: 32px; }
+.hud-tr { top: 24px; right: 32px; text-align: right; }
+.hud-bl { bottom: 24px; left: 32px; }
+.hud-br { bottom: 24px; right: 32px; text-align: right; }
+
+.hud .label { color: var(--ink-faint); display: block; margin-bottom: 4px; }
+.hud .value { color: var(--ink); font-weight: 500; }
+.hud .accent { color: var(--accent); }
+
+.progress-track {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--line);
+    z-index: 200;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    width: 0%;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 12px var(--accent);
+}
+
+.dots {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(15, 21, 36, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+}
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.dot:hover { background: var(--ink-dim); transform: scale(1.3); }
+.dot.active {
+    background: var(--accent);
+    width: 28px;
+    border-radius: 4px;
+    box-shadow: 0 0 8px var(--accent);
+}
+
+/* ============= SLIDE CONTAINER ============= */
+.deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2;
+}
+
+.slide {
+    position: absolute;
+    inset: 0;
+    padding: 64px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.slide.active .stagger > * {
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.slide.active .stagger > *:nth-child(1) { animation-delay: 0.10s; }
+.slide.active .stagger > *:nth-child(2) { animation-delay: 0.20s; }
+.slide.active .stagger > *:nth-child(3) { animation-delay: 0.30s; }
+.slide.active .stagger > *:nth-child(4) { animation-delay: 0.40s; }
+.slide.active .stagger > *:nth-child(5) { animation-delay: 0.50s; }
+.slide.active .stagger > *:nth-child(6) { animation-delay: 0.60s; }
+
+@keyframes rise {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============= TYPOGRAPHY ============= */
+.eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.eyebrow::before {
+    content: '';
+    width: 32px;
+    height: 1px;
+    background: var(--accent);
+}
+
+h2.section {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(32px, 4vw, 52px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+}
+h2.section em {
+    font-style: italic;
+    color: var(--accent);
+}
+
+.lede {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(18px, 1.6vw, 22px);
+    line-height: 1.5;
+    color: var(--ink-dim);
+    max-width: 720px;
+    font-weight: 300;
+}
+.lede strong { color: var(--ink); font-weight: 400; }
+
+/* ============= SLIDE A: INFINITE ASSETS ============= */
+.layoutA {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+    flex: 1;
+    align-items: stretch;
+    margin-bottom: 24px;
+    min-height: 0;
+}
+
+.chart-frame {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+}
+.chart-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.chart-subtitle {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-style: italic;
+    color: var(--ink);
+    margin-bottom: 20px;
+}
+.chart-svg {
+    flex: 1;
+    width: 100%;
+}
+.chart-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    margin-top: 12px;
+    letter-spacing: 0.05em;
+    text-align: right;
+}
+
+.factor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.factor-list .header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.factor {
+    display: flex;
+    gap: 16px;
+    padding: 16px 18px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--c, var(--accent));
+    border-radius: 3px;
+    transition: all 0.3s;
+}
+.factor:hover {
+    background: var(--panel-2);
+    transform: translateX(4px);
+}
+.factor .ix {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--c, var(--accent));
+    flex-shrink: 0;
+    padding-top: 2px;
+    width: 24px;
+}
+.factor .body { flex: 1; }
+.factor .head {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    color: var(--ink);
+    margin-bottom: 4px;
+    font-weight: 400;
+}
+.factor .desc {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-dim);
+}
+
+/* ============= SLIDE B: 24/7 MARKET ============= */
+.layoutB {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 40px;
+    flex: 1;
+    align-items: center;
+    margin-bottom: 24px;
+    min-height: 0;
+}
+.clock-frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.clock-svg {
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 1;
+}
+.clock-legend {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 16px;
+    margin-top: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+}
+.clock-legend > div { display: flex; align-items: center; gap: 8px; color: var(--ink-dim); }
+.clock-legend .swatch {
+    width: 12px; height: 12px; border-radius: 2px;
+}
+
+.implications {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.implications .header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.imp {
+    background: linear-gradient(135deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--c);
+    border-radius: 3px;
+    padding: 16px 20px;
+    transition: all 0.3s;
+}
+.imp:hover { border-color: var(--c); }
+.imp .ix {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--c);
+    letter-spacing: 0.2em;
+    margin-bottom: 6px;
+}
+.imp .head {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    color: var(--ink);
+    margin-bottom: 6px;
+    font-weight: 400;
+}
+.imp .head em { color: var(--c); font-style: italic; }
+.imp .desc {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-dim);
+}
+
+/* ============= SLIDE C: PROFESSIONAL REDEFINITION ============= */
+.versus {
+    display: grid;
+    grid-template-columns: 1fr 60px 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+    align-items: stretch;
+}
+.versus-col {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px 20px;
+}
+.versus-col.now { border-left: 3px solid var(--ink-faint); }
+.versus-col.next {
+    border-left: 3px solid var(--accent);
+    background: linear-gradient(135deg, var(--panel), rgba(255, 180, 84, 0.04));
+}
+.versus-col .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 4px;
+}
+.versus-col.next .label { color: var(--accent); }
+.versus-col .title {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    font-style: italic;
+    margin-bottom: 14px;
+    color: var(--ink);
+}
+.versus-col ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.versus-col li {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--ink-dim);
+    padding-left: 14px;
+    position: relative;
+}
+.versus-col li::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    color: var(--ink-faint);
+}
+.versus-col.next li {
+    color: var(--ink);
+}
+.versus-col.next li::before { color: var(--accent); }
+
+.versus-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    color: var(--accent);
+}
+
+.translation-msg {
+    text-align: center;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink-dim);
+    margin-bottom: 24px;
+    padding: 0 20px;
+}
+.translation-msg strong { color: var(--accent); font-weight: 400; }
+
+.abilities {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.ability {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-top: 2px solid var(--c);
+    border-radius: 3px;
+    padding: 14px 18px;
+    transition: all 0.3s;
+}
+.ability:hover {
+    background: var(--panel-2);
+    transform: translateY(-2px);
+}
+.ability .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--c);
+    letter-spacing: 0.2em;
+    margin-bottom: 4px;
+}
+.ability .title {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 4px;
+    font-weight: 400;
+}
+.ability .desc {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink-dim);
+}
+
+.final-quote {
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 28px;
+    align-items: center;
+}
+.final-quote .mark {
+    font-family: 'Fraunces', serif;
+    font-size: 48px;
+    line-height: 1;
+    color: var(--accent);
+    font-style: italic;
+    opacity: 0.5;
+}
+.final-quote .text {
+    font-family: 'Fraunces', serif;
+    font-size: 19px;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--ink);
+    font-weight: 300;
+}
+.final-quote .text strong {
+    color: var(--accent);
+    font-weight: 400;
+}
+.final-quote .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: right;
+    line-height: 1.6;
+}
+.final-quote .meta .a { color: var(--accent); display: block; }
+
+/* ============= HELP OVERLAY ============= */
+.help-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 23, 0.92);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.help-overlay.show { display: flex; opacity: 1; }
+.help-card {
+    max-width: 480px;
+    padding: 40px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    font-family: 'JetBrains Mono', monospace;
+}
+.help-card h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 28px;
+    margin-bottom: 24px;
+    color: var(--accent);
+}
+.help-card .key-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+}
+.help-card .keys { display: flex; gap: 6px; }
+.help-card .key {
+    background: var(--bg);
+    border: 1px solid var(--line-bright);
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--accent-2);
+}
+.help-card .desc {
+    color: var(--ink-dim);
+    align-self: center;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+@media (max-width: 1024px) {
+    .layoutA, .layoutB, .versus {
+        grid-template-columns: 1fr;
+    }
+    .versus-arrow { display: none; }
+    .abilities { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+    .slide { padding: 48px 24px 80px; }
+    .final-quote { grid-template-columns: 1fr; gap: 12px; }
+    .final-quote .meta { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+
+<div class="hud hud-tl">
+    <span class="label">// Lecture Series</span>
+    <span class="value">The Future of Financial Markets</span>
+</div>
+
+<div class="hud hud-tr">
+    <span class="label">// Module</span>
+    <span class="value"><span class="accent" id="moduleNum">01</span> / 03</span>
+</div>
+
+<div class="hud hud-bl">
+    <span class="label">// AI for Finance</span>
+    <span class="value" id="liveTime">--:--:--</span>
+</div>
+
+<div class="hud hud-br">
+    <span class="label">// Press <span style="color:var(--accent-2)">?</span> for keys</span>
+    <span class="value" id="slideTitle">Infinite Assets</span>
+</div>
+
+<div class="dots" id="dots"></div>
+
+<div class="deck" id="deck">
+
+<!-- ============================================================ -->
+<!-- SLIDE A: INFINITE ASSETS -->
+<!-- ============================================================ -->
+<section class="slide active" data-title="Infinite Assets">
+    <div class="eyebrow">Module 01 · The Asset Explosion</div>
+    <h2 class="section">자산은 <em>무한히</em> 증식한다</h2>
+
+    <div class="layoutA stagger">
+        <!-- LEFT: GROWTH CHART -->
+        <div class="chart-frame">
+            <div class="chart-title">// 글로벌 거래 가능 자산 수</div>
+            <div class="chart-subtitle">log scale · 1990 → 2025</div>
+            <svg class="chart-svg" viewBox="0 0 500 320" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <linearGradient id="barGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#ffb454" stop-opacity="0.7"/>
+                        <stop offset="100%" stop-color="#ffb454" stop-opacity="0.1"/>
+                    </linearGradient>
+                    <linearGradient id="barGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#6dd3ff" stop-opacity="0.7"/>
+                        <stop offset="100%" stop-color="#6dd3ff" stop-opacity="0.1"/>
+                    </linearGradient>
+                    <linearGradient id="barGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#ff6b9d" stop-opacity="0.8"/>
+                        <stop offset="100%" stop-color="#ff6b9d" stop-opacity="0.1"/>
+                    </linearGradient>
+                </defs>
+
+                <!-- Y axis grid -->
+                <g stroke="#1f2940" stroke-width="0.5">
+                    <line x1="60" y1="40" x2="480" y2="40"/>
+                    <line x1="60" y1="100" x2="480" y2="100"/>
+                    <line x1="60" y1="160" x2="480" y2="160"/>
+                    <line x1="60" y1="220" x2="480" y2="220"/>
+                    <line x1="60" y1="280" x2="480" y2="280"/>
+                </g>
+
+                <!-- Y labels -->
+                <g fill="#4a5568" font-family="JetBrains Mono" font-size="9" text-anchor="end">
+                    <text x="54" y="44">10M</text>
+                    <text x="54" y="104">1M</text>
+                    <text x="54" y="164">100K</text>
+                    <text x="54" y="224">10K</text>
+                    <text x="54" y="284">1K</text>
+                </g>
+
+                <!-- Bars -->
+                <g>
+                    <!-- 1990 -->
+                    <rect x="100" y="240" width="60" height="40" fill="url(#barGrad1)" stroke="#ffb454" stroke-opacity="0.5">
+                        <animate attributeName="height" from="0" to="40" dur="0.8s" begin="0.4s" fill="freeze"/>
+                        <animate attributeName="y" from="280" to="240" dur="0.8s" begin="0.4s" fill="freeze"/>
+                    </rect>
+                    <text x="130" y="300" text-anchor="middle" fill="#8a96ad" font-family="JetBrains Mono" font-size="10">1990</text>
+                    <text x="130" y="232" text-anchor="middle" fill="#ffb454" font-family="JetBrains Mono" font-size="9">~5K</text>
+
+                    <!-- 2010 -->
+                    <rect x="200" y="180" width="60" height="100" fill="url(#barGrad1)" stroke="#ffb454" stroke-opacity="0.5">
+                        <animate attributeName="height" from="0" to="100" dur="0.8s" begin="0.6s" fill="freeze"/>
+                        <animate attributeName="y" from="280" to="180" dur="0.8s" begin="0.6s" fill="freeze"/>
+                    </rect>
+                    <text x="230" y="300" text-anchor="middle" fill="#8a96ad" font-family="JetBrains Mono" font-size="10">2010</text>
+                    <text x="230" y="172" text-anchor="middle" fill="#ffb454" font-family="JetBrains Mono" font-size="9">~50K</text>
+
+                    <!-- 2020 -->
+                    <rect x="300" y="120" width="60" height="160" fill="url(#barGrad2)" stroke="#6dd3ff" stroke-opacity="0.5">
+                        <animate attributeName="height" from="0" to="160" dur="0.8s" begin="0.8s" fill="freeze"/>
+                        <animate attributeName="y" from="280" to="120" dur="0.8s" begin="0.8s" fill="freeze"/>
+                    </rect>
+                    <text x="330" y="300" text-anchor="middle" fill="#8a96ad" font-family="JetBrains Mono" font-size="10">2020</text>
+                    <text x="330" y="112" text-anchor="middle" fill="#6dd3ff" font-family="JetBrains Mono" font-size="9">~500K</text>
+
+                    <!-- 2025 -->
+                    <rect x="400" y="50" width="60" height="230" fill="url(#barGrad3)" stroke="#ff6b9d" stroke-opacity="0.7">
+                        <animate attributeName="height" from="0" to="230" dur="1s" begin="1.0s" fill="freeze"/>
+                        <animate attributeName="y" from="280" to="50" dur="1s" begin="1.0s" fill="freeze"/>
+                    </rect>
+                    <text x="430" y="300" text-anchor="middle" fill="#8a96ad" font-family="JetBrains Mono" font-size="10">2025</text>
+                    <text x="430" y="42" text-anchor="middle" fill="#ff6b9d" font-family="JetBrains Mono" font-size="9">10M+</text>
+                </g>
+
+                <!-- Annotation arrow -->
+                <g opacity="0">
+                    <animate attributeName="opacity" from="0" to="1" dur="0.5s" begin="2s" fill="freeze"/>
+                    <line x1="370" y1="80" x2="395" y2="60" stroke="#ff6b9d" stroke-width="1" stroke-dasharray="2 2"/>
+                    <text x="280" y="78" fill="#ff6b9d" font-family="Fraunces" font-style="italic" font-size="11">on-chain tokens</text>
+                </g>
+            </svg>
+            <div class="chart-caption">SOURCE: WFE · CoinGecko · DeFiLlama (estimates, 2025)</div>
+        </div>
+
+        <!-- RIGHT: ENABLING FACTORS -->
+        <div class="factor-list">
+            <div class="header">// 무엇이 이를 가능케 했는가</div>
+            <div class="factor" style="--c: #ffb454">
+                <span class="ix">→ 01</span>
+                <div class="body">
+                    <div class="head">Stablecoin <span style="font-size:12px; color:var(--ink-faint)">— digital unit of account</span></div>
+                    <div class="desc">USDT/USDC가 가격 발견의 분모 역할.
+                    어떤 자산이든 24/7 즉시 견적 가능한 기준 단위가 생겼다.</div>
+                </div>
+            </div>
+            <div class="factor" style="--c: #6dd3ff">
+                <span class="ix">→ 02</span>
+                <div class="body">
+                    <div class="head">Smart Contract <span style="font-size:12px; color:var(--ink-faint)">— marginal cost ≈ 0</span></div>
+                    <div class="desc">자산 발행 비용이 사실상 0.
+                    상장 절차 · 인수인 · 청산소 없이 누구나 토큰 발행 가능.</div>
+                </div>
+            </div>
+            <div class="factor" style="--c: #ff6b9d">
+                <span class="ix">→ 03</span>
+                <div class="body">
+                    <div class="head">Permissionless Markets <span style="font-size:12px; color:var(--ink-faint)">— anyone can list</span></div>
+                    <div class="desc">DEX는 상장 심사가 없다.
+                    유동성 풀만 만들면 즉시 거래 가능. 시장 개설의 진입장벽 소멸.</div>
+                </div>
+            </div>
+            <div class="factor" style="--c: #7ee787">
+                <span class="ix">→ 04</span>
+                <div class="body">
+                    <div class="head">Tokenization of Cash Flow <span style="font-size:12px; color:var(--ink-faint)">— anything can be an asset</span></div>
+                    <div class="desc">현금흐름이 있는 어떤 것도 토큰화 가능.
+                    부동산 임대료, 사모대출, 음원 로열티, AI 모델 추론료까지.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="border-top: 1px solid var(--line); padding-top: 16px; display: flex; justify-content: space-between; align-items: baseline;">
+        <p class="lede" style="font-size: 16px; max-width: none;">
+            <strong>의미</strong>: Long-tail 자산이 시장의 주류가 된다.
+            의미 있는 신호와 노이즈를 구분하는 부담이 <strong>분석가에게 전가</strong>된다.
+        </p>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-faint); letter-spacing: 0.2em;">→ NEXT: 24/7 MARKET</span>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE B: 24/7 MARKET -->
+<!-- ============================================================ -->
+<section class="slide" data-title="The 24/7 Market">
+    <div class="eyebrow">Module 02 · The Sleepless Market</div>
+    <h2 class="section">시장은 더 이상 <em>잠들지 않는다</em></h2>
+
+    <div class="layoutB stagger">
+        <!-- LEFT: 24-HOUR CLOCK -->
+        <div class="clock-frame">
+            <svg class="clock-svg" viewBox="0 0 400 400">
+                <defs>
+                    <radialGradient id="clockGlow">
+                        <stop offset="0%" stop-color="#ffb454" stop-opacity="0.15"/>
+                        <stop offset="100%" stop-color="#ffb454" stop-opacity="0"/>
+                    </radialGradient>
+                </defs>
+
+                <!-- Background -->
+                <circle cx="200" cy="200" r="170" fill="url(#clockGlow)"/>
+
+                <!-- Outer ring: Crypto 24/7 -->
+                <circle cx="200" cy="200" r="170" fill="none" stroke="#c084fc" stroke-width="14" stroke-opacity="0.7"/>
+
+                <!-- USA: 24h (full circle, slightly inner) -->
+                <circle cx="200" cy="200" r="145" fill="none" stroke="#6dd3ff" stroke-width="12" stroke-opacity="0.6" stroke-dasharray="0 0"/>
+
+                <!-- Korea: 12h arc (proposed extension - approximately half circle) -->
+                <!-- Arc from -90° (top) sweeping 180° -->
+                <path d="M 200 80 A 120 120 0 1 1 200 320" fill="none" stroke="#ffb454" stroke-width="12" stroke-opacity="0.7"/>
+
+                <!-- Europe: ~9 hours (Stoxx CET 9-17:30 + extension) -->
+                <path d="M 200 105 A 95 95 0 0 1 295 200" fill="none" stroke="#7ee787" stroke-width="12" stroke-opacity="0.6"/>
+
+                <!-- Hour markers -->
+                <g stroke="#2a3654" stroke-width="1">
+                    <line x1="200" y1="20" x2="200" y2="32"/>
+                    <line x1="380" y1="200" x2="368" y2="200"/>
+                    <line x1="200" y1="380" x2="200" y2="368"/>
+                    <line x1="20" y1="200" x2="32" y2="200"/>
+                </g>
+
+                <!-- Hour labels -->
+                <g fill="#4a5568" font-family="JetBrains Mono" font-size="10" text-anchor="middle">
+                    <text x="200" y="14">00</text>
+                    <text x="394" y="204">06</text>
+                    <text x="200" y="396">12</text>
+                    <text x="6" y="204">18</text>
+                </g>
+
+                <!-- Center label -->
+                <circle cx="200" cy="200" r="50" fill="#0a0e17" stroke="#1f2940" stroke-width="1"/>
+                <text x="200" y="194" text-anchor="middle" fill="#8a96ad" font-family="JetBrains Mono" font-size="9" letter-spacing="2">MARKET</text>
+                <text x="200" y="212" text-anchor="middle" fill="#ffb454" font-family="Fraunces" font-style="italic" font-size="16">hours</text>
+            </svg>
+            <div class="clock-legend">
+                <div><span class="swatch" style="background:#c084fc"></span>Crypto 24/7</div>
+                <div><span class="swatch" style="background:#6dd3ff"></span>US 24h (proposed)</div>
+                <div><span class="swatch" style="background:#ffb454"></span>Korea 12h (extending)</div>
+                <div><span class="swatch" style="background:#7ee787"></span>Europe ~9h</div>
+            </div>
+        </div>
+
+        <!-- RIGHT: IMPLICATIONS -->
+        <div class="implications">
+            <div class="header">// econometric & operational implications</div>
+            <div class="imp" style="--c: #ffb454">
+                <div class="ix">IMPLICATION 01</div>
+                <div class="head">"Daily return"의 <em>정의 모호화</em></div>
+                <div class="desc">하루 수익률은 어디서 어디까지인가?
+                기존 OHLC · daily return 가정이 흔들린다.
+                연구 단위 자체를 다시 정의해야 한다.</div>
+            </div>
+            <div class="imp" style="--c: #6dd3ff">
+                <div class="ix">IMPLICATION 02</div>
+                <div class="head">Weekend gap의 <em>소멸</em></div>
+                <div class="desc">월요일 시초가 충격이 사라진다.
+                변동성 분포가 더 매끄러워지지만,
+                동시에 항상 새로운 정보가 가격에 반영된다.</div>
+            </div>
+            <div class="imp" style="--c: #ff6b9d">
+                <div class="ix">IMPLICATION 03</div>
+                <div class="head">리스크 모델의 <em>가정 재검토</em></div>
+                <div class="desc">VaR · 청산 메커니즘 · funding rate 모두
+                "시장이 닫힌다"는 가정에 의존했다.
+                이 가정이 깨지면 모델 전체를 다시 보정해야 한다.</div>
+            </div>
+            <div class="imp" style="--c: #7ee787">
+                <div class="ix">IMPLICATION 04</div>
+                <div class="head">인간의 <em>시간적 한계</em></div>
+                <div class="desc">한 사람이 모든 시간에 깨어 있을 수 없다.
+                알고리즘 의존은 필연.
+                대신 <strong style="color:var(--ink)">알고리즘을 설계하는 사람</strong>의 가치가 올라간다.</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="border-top: 1px solid var(--line); padding-top: 16px; display: flex; justify-content: space-between; align-items: baseline;">
+        <p class="lede" style="font-size: 16px; max-width: none;">
+            <strong>의미</strong>: 24시간 시장은 위협이 아니다.
+            대신 <strong>"언제 일할 것인가"</strong>의 선택이 새로운 전략적 결정이 된다.
+        </p>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-faint); letter-spacing: 0.2em;">→ NEXT: REDEFINING PROFESSIONAL</span>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE C: REDEFINING PROFESSIONAL -->
+<!-- ============================================================ -->
+<section class="slide" data-title="Redefining Professional">
+    <div class="eyebrow">Module 03 · The Professional, Redefined</div>
+    <h2 class="section">"전문가"의 정의가 <em>바뀐다</em></h2>
+
+    <div class="stagger" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+
+        <!-- VERSUS COMPARISON -->
+        <div class="versus">
+            <div class="versus-col now">
+                <div class="label">// 너희가 배운 것</div>
+                <div class="title">Skeleton — 사고의 골격</div>
+                <ul>
+                    <li>CAPM — 단일 시장 위험 모델</li>
+                    <li>Fama-French Factor Models</li>
+                    <li>Markowitz Mean-Variance</li>
+                    <li>Hierarchical Risk Parity (de Prado)</li>
+                    <li>일별 수익률 · OHLC 데이터</li>
+                </ul>
+            </div>
+            <div class="versus-arrow">→</div>
+            <div class="versus-col next">
+                <div class="label">// 시대가 요구하는 것</div>
+                <div class="title">Extension — 골격 위에 얹기</div>
+                <ul>
+                    <li>Multi-venue · multi-chain risk decomposition</li>
+                    <li>Dynamic factor discovery (ML 기반)</li>
+                    <li>Network · graph 분석 (시장 구조)</li>
+                    <li>Microsecond order flow · MEV 데이터</li>
+                    <li>24/7 continuous data · regime detection</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="translation-msg">
+            "학문은 <strong>폐기 대상이 아니라 번역 대상</strong>이다.<br>
+            de Prado가 Markowitz를 부정한 게 아니라, 새 인프라에 옮겨 쓴 것처럼."
+        </div>
+
+        <!-- 4 ABILITIES -->
+        <div class="abilities">
+            <div class="ability" style="--c: #ffb454">
+                <div class="num">ABILITY 01</div>
+                <div class="title">Frame Selection · 프레임 선택력</div>
+                <div class="desc">무한 자산 중 <strong style="color:var(--ink)">무엇을 볼지</strong>를 정하는 능력.
+                100만 토큰 중 어떤 그래프 구조로 묶어 볼 것인가.</div>
+            </div>
+            <div class="ability" style="--c: #6dd3ff">
+                <div class="num">ABILITY 02</div>
+                <div class="title">Time Horizon Arbitrage · 시간 차익</div>
+                <div class="desc">24시간 시장에서 <strong style="color:var(--ink)">자기의 시간</strong>이 언제인지 아는 능력.
+                자동화와 선택적 집중의 균형.</div>
+            </div>
+            <div class="ability" style="--c: #ff6b9d">
+                <div class="num">ABILITY 03</div>
+                <div class="title">Model Skepticism · 모델 회의주의</div>
+                <div class="desc">자기 모델의 <strong style="color:var(--ink)">가정이 언제 깨지는지</strong>
+                아는 능력. VaR이 24/7 시장에서 무엇을 의미하는지 다시 묻기.</div>
+            </div>
+            <div class="ability" style="--c: #7ee787">
+                <div class="num">ABILITY 04</div>
+                <div class="title">Composability Thinking · 결합 사고</div>
+                <div class="desc">단일 전략이 아닌 <strong style="color:var(--ink)">결합 가능한 컴포넌트</strong>로 사고.
+                자기 작업이 타인의 입력값이 될 수 있게 설계.</div>
+            </div>
+        </div>
+
+        <div class="final-quote">
+            <div class="mark">"</div>
+            <div class="text">
+                전문가는 더 이상 <strong>모든 것을 아는 사람</strong>이 아니다.<br>
+                <strong>무엇을 모르는지 가장 빠르게 아는 사람</strong>이다.
+            </div>
+            <div class="meta">
+                <span class="a">— Closing</span>
+                AI for Finance · 2026
+            </div>
+        </div>
+    </div>
+</section>
+
+</div>
+
+<!-- HELP OVERLAY -->
+<div class="help-overlay" id="helpOverlay">
+    <div class="help-card">
+        <h3>Keyboard Navigation</h3>
+        <div class="key-row">
+            <div class="keys"><span class="key">→</span><span class="key">Space</span></div>
+            <div class="desc">Next module</div>
+        </div>
+        <div class="key-row">
+            <div class="keys"><span class="key">←</span></div>
+            <div class="desc">Previous module</div>
+        </div>
+        <div class="key-row">
+            <div class="keys"><span class="key">F</span></div>
+            <div class="desc">Fullscreen</div>
+        </div>
+        <div class="key-row">
+            <div class="keys"><span class="key">?</span><span class="key">Esc</span></div>
+            <div class="desc">Toggle this help</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+const dots = document.getElementById('dots');
+const progress = document.getElementById('progress');
+const moduleNum = document.getElementById('moduleNum');
+const slideTitle = document.getElementById('slideTitle');
+const helpOverlay = document.getElementById('helpOverlay');
+let current = 0;
+let isTransitioning = false;
+
+for (let i = 0; i < total; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    dots.appendChild(dot);
+}
+
+function update() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    dots.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    progress.style.width = ((current + 1) / total * 100) + '%';
+    moduleNum.textContent = String(current + 1).padStart(2, '0');
+    slideTitle.textContent = slides[current].dataset.title || '';
+}
+
+function goTo(i) {
+    if (isTransitioning) return;
+    if (i < 0 || i >= total) return;
+    isTransitioning = true;
+    current = i;
+    update();
+    setTimeout(() => isTransitioning = false, 700);
+}
+
+function next() { goTo(current + 1); }
+function prev() { goTo(current - 1); }
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault(); next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault(); prev();
+    } else if (e.key === 'Home') {
+        e.preventDefault(); goTo(0);
+    } else if (e.key === 'End') {
+        e.preventDefault(); goTo(total - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+    } else if (e.key === '?' || e.key === '/') {
+        helpOverlay.classList.toggle('show');
+    } else if (e.key === 'Escape') {
+        helpOverlay.classList.remove('show');
+    }
+});
+
+helpOverlay.addEventListener('click', (e) => {
+    if (e.target === helpOverlay) helpOverlay.classList.remove('show');
+});
+
+let touchStartX = 0;
+document.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+});
+document.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 50) {
+        if (dx < 0) next(); else prev();
+    }
+});
+
+let wheelLock = false;
+document.addEventListener('wheel', (e) => {
+    if (wheelLock) return;
+    if (Math.abs(e.deltaY) < 30) return;
+    wheelLock = true;
+    if (e.deltaY > 0) next(); else prev();
+    setTimeout(() => wheelLock = false, 800);
+}, { passive: true });
+
+function updateClock() {
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    document.getElementById('liveTime').textContent = `${h}:${m}:${s}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+update();
+</script>
+
+</body>
+</html>

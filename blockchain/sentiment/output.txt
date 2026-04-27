@@ -1,0 +1,3 @@
+[2026-04-28 00:03:18.739117] Sentiment Bot
+Bitcoin adoption surges        | 0.5   | BUY
+Exchange hack causes panic     | -0.5  | SELL

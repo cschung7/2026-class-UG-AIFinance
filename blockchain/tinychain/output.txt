@@ -1,0 +1,17 @@
+Mining block 1...
+[
+  {
+    "index": 1,
+    "timestamp": 1777302178.4087818,
+    "transactions": [],
+    "proof": 100,
+    "previous_hash": "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
+  },
+  {
+    "index": 2,
+    "timestamp": 1777302178.4301262,
+    "transactions": [],
+    "proof": 35293,
+    "previous_hash": "2c7e59b1574ef12e0dbcdf33e0f302f0e8fc9dce9af6fa2a3a75cc80c800ae54"
+  }
+]
