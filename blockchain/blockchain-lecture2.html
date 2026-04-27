@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blockchain as Dynamic Economic Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&family=JetBrains+Mono:wght@300;400;500;700&family=Inter+Tight:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #0a0e17;
+    --bg-deep: #060912;
+    --panel: #0f1524;
+    --panel-2: #131a2c;
+    --ink: #e8eef7;
+    --ink-dim: #8a96ad;
+    --ink-faint: #4a5568;
+    --line: #1f2940;
+    --line-bright: #2a3654;
+    --accent: #ffb454;
+    --accent-2: #6dd3ff;
+    --accent-3: #ff6b9d;
+    --accent-4: #7ee787;
+    --grid: rgba(255, 255, 255, 0.025);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-deep);
+    color: var(--ink);
+    font-family: 'Inter Tight', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 0%, rgba(255, 180, 84, 0.08), transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(109, 211, 255, 0.06), transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ============= HUD ============= */
+.hud {
+    position: fixed;
+    z-index: 100;
+    color: var(--ink-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    pointer-events: none;
+}
+.hud-tl { top: 24px; left: 32px; }
+.hud-tr { top: 24px; right: 32px; text-align: right; }
+.hud-bl { bottom: 24px; left: 32px; }
+.hud-br { bottom: 24px; right: 32px; text-align: right; }
+
+.hud .label { color: var(--ink-faint); display: block; margin-bottom: 4px; }
+.hud .value { color: var(--ink); font-weight: 500; }
+.hud .accent { color: var(--accent); }
+
+.progress-track {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--line);
+    z-index: 200;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    width: 0%;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 12px var(--accent);
+}
+
+.dots {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(15, 21, 36, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+}
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.dot:hover { background: var(--ink-dim); transform: scale(1.3); }
+.dot.active {
+    background: var(--accent);
+    width: 24px;
+    border-radius: 3px;
+    box-shadow: 0 0 8px var(--accent);
+}
+
+/* ============= SLIDE CONTAINER ============= */
+.deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2;
+}
+
+.slide {
+    position: absolute;
+    inset: 0;
+    padding: 64px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+/* Stagger animation for active slide children */
+.slide.active .stagger > * {
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.slide.active .stagger > *:nth-child(1) { animation-delay: 0.15s; }
+.slide.active .stagger > *:nth-child(2) { animation-delay: 0.25s; }
+.slide.active .stagger > *:nth-child(3) { animation-delay: 0.35s; }
+.slide.active .stagger > *:nth-child(4) { animation-delay: 0.45s; }
+.slide.active .stagger > *:nth-child(5) { animation-delay: 0.55s; }
+.slide.active .stagger > *:nth-child(6) { animation-delay: 0.65s; }
+.slide.active .stagger > *:nth-child(7) { animation-delay: 0.75s; }
+
+@keyframes rise {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============= TYPOGRAPHY ============= */
+.eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.eyebrow::before {
+    content: '';
+    width: 32px;
+    height: 1px;
+    background: var(--accent);
+}
+
+h1.display {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(48px, 6.5vw, 92px);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+}
+h1.display em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+}
+h1.display .strike {
+    position: relative;
+    display: inline-block;
+}
+h1.display .strike::after {
+    content: '';
+    position: absolute;
+    left: -4px; right: -4px;
+    top: 52%;
+    height: 2px;
+    background: var(--accent-3);
+    transform: scaleX(0);
+    transform-origin: left;
+    animation: strikeIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+}
+@keyframes strikeIn { to { transform: scaleX(1); } }
+
+h2.section {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(32px, 4vw, 52px);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+}
+h2.section em {
+    font-style: italic;
+    color: var(--accent);
+}
+
+.lede {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(20px, 1.8vw, 26px);
+    line-height: 1.5;
+    color: var(--ink-dim);
+    max-width: 720px;
+    font-weight: 300;
+}
+.lede strong { color: var(--ink); font-weight: 400; }
+
+/* ============= SLIDE 1: HERO ============= */
+.hero {
+    justify-content: center;
+}
+.hero .meta {
+    display: flex;
+    gap: 48px;
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    max-width: 720px;
+}
+.hero .meta div { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.hero .meta .k { color: var(--ink-faint); display: block; margin-bottom: 6px; letter-spacing: 0.15em; text-transform: uppercase; }
+.hero .meta .v { color: var(--ink); }
+
+.hero-decoration {
+    position: absolute;
+    right: 96px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 320px;
+    height: 320px;
+    pointer-events: none;
+}
+
+/* ============= SLIDE 2: TRACKS ============= */
+.tracks {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+}
+.track {
+    background: linear-gradient(135deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    min-height: 160px;
+}
+.track::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--c, var(--accent));
+    opacity: 0.5;
+    transition: all 0.4s;
+}
+.track:hover {
+    border-color: var(--c, var(--accent));
+    transform: translateY(-2px);
+}
+.track:hover::before { opacity: 1; box-shadow: 0 0 16px var(--c, var(--accent)); }
+
+.track-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.2em;
+    margin-bottom: 8px;
+}
+.track-title {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: var(--c, var(--ink));
+    margin-bottom: 4px;
+}
+.track-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-bottom: 18px;
+    letter-spacing: 0.05em;
+}
+.track-flow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--ink-dim);
+}
+.track-flow .step { color: var(--ink); }
+.track-flow .arrow { color: var(--c, var(--accent)); margin: 0 6px; }
+
+/* ============= SLIDE 3: TIMELINE ============= */
+.timeline-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-top: 16px;
+    min-height: 0;
+}
+.timeline-axis {
+    position: relative;
+    height: 32px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+}
+.timeline-axis::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 8px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-bright) 5%, var(--line-bright) 95%, transparent);
+}
+.timeline-axis span {
+    position: relative;
+    padding-bottom: 14px;
+}
+.timeline-axis span::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    transform: translateX(-50%);
+}
+
+.timeline-rows {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: hidden;
+}
+.tl-row {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 24px;
+    align-items: center;
+}
+.tl-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--c, var(--ink));
+    text-align: right;
+    padding-right: 16px;
+    border-right: 1px solid var(--line);
+}
+.tl-track {
+    position: relative;
+    height: 38px;
+    background: var(--panel);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.tl-bar {
+    position: absolute;
+    height: 100%;
+    background: linear-gradient(90deg,
+        color-mix(in srgb, var(--c) 5%, transparent),
+        color-mix(in srgb, var(--c) 25%, transparent));
+    border-left: 2px solid var(--c);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transform: scaleX(1);
+    transform-origin: left;
+}
+.slide.active .tl-bar {
+    animation: barIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes barIn {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+/* ============= SLIDE 4: LOOP DIAGRAM ============= */
+.loop-layout {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 48px;
+    flex: 1;
+    align-items: center;
+    min-height: 0;
+}
+.loop-text { max-width: 480px; }
+.loop-text .lede { margin-bottom: 32px; }
+.loop-text .pulls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-left: 1px solid var(--line);
+    padding-left: 20px;
+}
+.loop-text .pulls > div {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-dim);
+}
+.loop-text .pulls strong { color: var(--accent); margin-right: 8px; }
+
+.loop-diagram {
+    position: relative;
+    aspect-ratio: 1;
+    max-height: 100%;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+/* ============= SLIDE: CASE STUDIES ============= */
+.case-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    flex: 1;
+    min-height: 0;
+    align-items: center;
+}
+.case-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.case-step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--c, var(--accent));
+    border-radius: 3px;
+    transition: all 0.3s;
+    position: relative;
+}
+.case-step:hover {
+    background: var(--panel-2);
+    border-left-color: var(--c, var(--accent));
+    transform: translateX(4px);
+}
+.case-step .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    width: 24px;
+}
+.case-step .text {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 16px;
+    color: var(--ink);
+}
+.case-step.crisis {
+    border-left-color: var(--accent-3);
+    background: linear-gradient(90deg, rgba(255, 107, 157, 0.08), transparent);
+}
+.case-step.crisis .text { color: var(--accent-3); }
+
+.case-aside {
+    border-left: 2px solid var(--accent);
+    padding: 8px 0 8px 24px;
+}
+.case-aside .pulled-quote {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 28px;
+    line-height: 1.3;
+    font-weight: 300;
+    color: var(--ink);
+    margin-bottom: 24px;
+}
+.case-aside .pulled-quote em { color: var(--accent); font-style: italic; }
+.case-aside .insight-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.case-aside .insight {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink-dim);
+}
+
+/* ============= SLIDE 9: QUANTUM ============= */
+.quantum-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    flex: 1;
+    align-items: center;
+    min-height: 0;
+}
+.quantum-text .lede { margin-bottom: 32px; }
+.quantum-points { display: flex; flex-direction: column; gap: 18px; }
+.q-point {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+}
+.q-point .ix {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    width: 36px;
+    flex-shrink: 0;
+    padding-top: 2px;
+}
+.q-point .body { font-size: 15px; line-height: 1.6; color: var(--ink); }
+.q-point .body span { color: var(--ink-dim); display: block; margin-top: 4px; font-size: 13px; }
+
+/* ============= SLIDE 10: FINAL ============= */
+.final {
+    justify-content: center;
+}
+.final-takeaways {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+    margin-top: 64px;
+    border: 1px solid var(--line);
+}
+.final-takeaways > div {
+    background: var(--bg);
+    padding: 32px 28px;
+    transition: background 0.3s;
+}
+.final-takeaways > div:hover { background: var(--panel); }
+.final-takeaways .num {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: block;
+}
+.final-takeaways .head {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    line-height: 1.2;
+    margin-bottom: 12px;
+    color: var(--ink);
+}
+.final-takeaways .desc {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-dim);
+}
+
+.final-signature {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+.final-signature .end {
+    color: var(--accent);
+}
+
+/* ============= ANIMATED ELEMENTS ============= */
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+@keyframes orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes flow {
+    0% { stroke-dashoffset: 100; }
+    100% { stroke-dashoffset: 0; }
+}
+
+.blink {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background: var(--accent);
+    vertical-align: text-bottom;
+    margin-left: 4px;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* Help overlay */
+.help-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 23, 0.92);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.help-overlay.show { display: flex; opacity: 1; }
+.help-card {
+    max-width: 480px;
+    padding: 40px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    font-family: 'JetBrains Mono', monospace;
+}
+.help-card h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: 28px;
+    margin-bottom: 24px;
+    color: var(--accent);
+}
+.help-card .key-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+}
+.help-card .keys {
+    display: flex;
+    gap: 6px;
+}
+.help-card .key {
+    background: var(--bg);
+    border: 1px solid var(--line-bright);
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: var(--accent-2);
+}
+.help-card .desc { color: var(--ink-dim); align-self: center; text-transform: uppercase; letter-spacing: 0.1em; }
+
+@media (max-width: 768px) {
+    .slide { padding: 48px 24px 80px; }
+    .tracks, .case-grid, .quantum-layout, .loop-layout, .final-takeaways {
+        grid-template-columns: 1fr;
+    }
+    .hero-decoration { display: none; }
+    h1.display { font-size: 38px; }
+    .tl-row { grid-template-columns: 80px 1fr; gap: 12px; }
+    .tl-label { font-size: 9px; padding-right: 8px; }
+    .timeline-axis { font-size: 10px; }
+    .track { min-height: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="progress"></div></div>
+
+<div class="hud hud-tl">
+    <span class="label">// Lecture Series</span>
+    <span class="value">Blockchain · Dynamic Systems</span>
+</div>
+
+<div class="hud hud-tr">
+    <span class="label">// Session</span>
+    <span class="value"><span class="accent" id="sessionNum">01</span> / 10</span>
+</div>
+
+<div class="hud hud-bl">
+    <span class="label">// WWAI Research</span>
+    <span class="value" id="liveTime">--:--:--</span>
+</div>
+
+<div class="hud hud-br">
+    <span class="label">// Press <span style="color:var(--accent-2)">?</span> for keys</span>
+    <span class="value" id="slideTitle">Introduction</span>
+</div>
+
+<div class="dots" id="dots"></div>
+
+<div class="deck" id="deck">
+
+<!-- ============================================================ -->
+<!-- SLIDE 1: HERO -->
+<!-- ============================================================ -->
+<section class="slide active" data-title="Introduction">
+    <div class="stagger" style="max-width: 980px;">
+        <div class="eyebrow">Lecture 01 · 2026</div>
+        <h1 class="display">
+            블록체인은 <em>하나의 기술</em>이 아니다.<br>
+            서로 다른 문제들이 <em>독립적으로</em><br>
+            진화하는 <em>경제 시스템</em>이다<span class="blink"></span>
+        </h1>
+        <p class="lede">
+            화폐, 금융중개, 시장구조, 규제, 지정학, 보안.<br>
+            이 여섯 개의 트랙은 <strong>독립적으로 진화</strong>하면서
+            서로의 출력값을 입력값으로 소비한다.
+        </p>
+        <div class="meta">
+            <div>
+                <span class="k">Course</span>
+                <span class="v">AI for Finance</span>
+            </div>
+            <div>
+                <span class="k">Topic</span>
+                <span class="v">Crypto Macro Architecture</span>
+            </div>
+            <div>
+                <span class="k">Frame</span>
+                <span class="v">Multi-track evolution</span>
+            </div>
+            <div>
+                <span class="k">Duration</span>
+                <span class="v">10 sections</span>
+            </div>
+        </div>
+    </div>
+    <svg class="hero-decoration" viewBox="0 0 320 320">
+        <defs>
+            <radialGradient id="heroGlow">
+                <stop offset="0%" stop-color="#ffb454" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#ffb454" stop-opacity="0"/>
+            </radialGradient>
+        </defs>
+        <circle cx="160" cy="160" r="140" fill="url(#heroGlow)"/>
+        <g style="transform-origin: 160px 160px; animation: orbit 40s linear infinite;">
+            <circle cx="160" cy="40" r="4" fill="#ffb454"/>
+            <circle cx="160" cy="40" r="8" fill="none" stroke="#ffb454" stroke-opacity="0.3"/>
+        </g>
+        <g style="transform-origin: 160px 160px; animation: orbit 60s linear infinite reverse;">
+            <circle cx="160" cy="60" r="3" fill="#6dd3ff"/>
+        </g>
+        <g style="transform-origin: 160px 160px; animation: orbit 80s linear infinite;">
+            <circle cx="280" cy="160" r="3" fill="#ff6b9d"/>
+        </g>
+        <circle cx="160" cy="160" r="120" fill="none" stroke="#1f2940" stroke-width="1" stroke-dasharray="2 4"/>
+        <circle cx="160" cy="160" r="100" fill="none" stroke="#1f2940" stroke-width="1"/>
+        <circle cx="160" cy="160" r="60" fill="none" stroke="#2a3654" stroke-width="1"/>
+        <text x="160" y="166" text-anchor="middle" fill="#e8eef7" font-family="Fraunces, serif" font-style="italic" font-size="20">crypto</text>
+    </svg>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 2: SIX TRACKS -->
+<!-- ============================================================ -->
+<section class="slide" data-title="Six Independent Tracks">
+    <div class="eyebrow">02 · Independent Problem Tracks</div>
+    <h2 class="section">여섯 개의 <em>평행 우주</em></h2>
+    <div class="tracks stagger">
+        <div class="track" style="--c: #ffb454">
+            <div class="track-num">TRACK 01</div>
+            <div class="track-title">Money</div>
+            <div class="track-sub">// 화폐 — store of value & unit of account</div>
+            <div class="track-flow">
+                <span class="step">Bitcoin</span><span class="arrow">→</span><span class="step">Stablecoin</span><span class="arrow">→</span><span class="step">CBDC</span><br>
+                디지털 금에서 달러 경쟁, 그리고 국가의 대응
+            </div>
+        </div>
+        <div class="track" style="--c: #6dd3ff">
+            <div class="track-num">TRACK 02</div>
+            <div class="track-title">Finance</div>
+            <div class="track-sub">// 금융중개 — intermediation logic</div>
+            <div class="track-flow">
+                <span class="step">ICO</span><span class="arrow">→</span><span class="step">DeFi</span><span class="arrow">→</span><span class="step">RWA</span><br>
+                대출, 거래, 파생상품의 자동화와 토큰화
+            </div>
+        </div>
+        <div class="track" style="--c: #ff6b9d">
+            <div class="track-num">TRACK 03</div>
+            <div class="track-title">Market Structure</div>
+            <div class="track-sub">// 시장구조 — venue & ordering</div>
+            <div class="track-flow">
+                <span class="step">CEX</span><span class="arrow">→</span><span class="step">DEX</span><span class="arrow">→</span><span class="step">AMM</span><span class="arrow">→</span><span class="step">MEV</span><br>
+                <span style="color:var(--ink-faint); font-size:11px;">중앙화 → 탈중앙 → 자동시장조성 → 순서 추출</span><br>
+                거래보다 <em>순서</em>가 가치가 되는 진화
+            </div>
+        </div>
+        <div class="track" style="--c: #7ee787">
+            <div class="track-num">TRACK 04</div>
+            <div class="track-title">Regulation</div>
+            <div class="track-sub">// 규제 — institutional response</div>
+            <div class="track-flow">
+                <span class="step">AML</span><span class="arrow">→</span><span class="step">SEC</span><span class="arrow">→</span><span class="step">ETF</span><span class="arrow">→</span><span class="step">CLARITY</span><br>
+                자금세탁부터 시장구조 법안까지
+            </div>
+        </div>
+        <div class="track" style="--c: #c084fc">
+            <div class="track-num">TRACK 05</div>
+            <div class="track-title">Geopolitics</div>
+            <div class="track-sub">// 지정학 — payment infrastructure</div>
+            <div class="track-flow">
+                <span class="step">Neutral asset</span><span class="arrow">→</span><span class="step">Sanctions</span><span class="arrow">→</span><span class="step">Settlement</span><br>
+                중립 자산에서 결제 인프라 경쟁으로
+            </div>
+        </div>
+        <div class="track" style="--c: #f87171">
+            <div class="track-num">TRACK 06</div>
+            <div class="track-title">Security</div>
+            <div class="track-sub">// 보안 — cryptographic foundation</div>
+            <div class="track-flow">
+                <span class="step">ECDSA</span><span class="arrow">→</span><span class="step">Quantum threat</span><span class="arrow">→</span><span class="step">PQC</span><br>
+                신뢰는 경제뿐 아니라 암호학에 의존
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 3: TIMELINE -->
+<!-- ============================================================ -->
+<section class="slide" data-title="Timeline of Evolution">
+    <div class="eyebrow">03 · Parallel Evolution Across Time</div>
+    <h2 class="section">시간축 위의 <em>독립적 진화</em></h2>
+    <div class="timeline-wrap">
+        <div class="timeline-axis">
+            <span>2009</span>
+            <span>2013</span>
+            <span>2017</span>
+            <span>2020</span>
+            <span>2022</span>
+            <span>2024</span>
+            <span>2026</span>
+        </div>
+        <div class="timeline-rows">
+            <div class="tl-row" style="--c: #ffb454">
+                <div class="tl-label">Money</div>
+                <div class="tl-track">
+                    <div class="tl-bar" style="left: 0%; width: 100%; animation-delay: 0.2s;">
+                        Bitcoin → store of value → stablecoins → ETF approval → sovereign debate
+                    </div>
+                </div>
+            </div>
+            <div class="tl-row" style="--c: #6dd3ff">
+                <div class="tl-label">Finance</div>
+                <div class="tl-track">
+                    <div class="tl-bar" style="left: 25%; width: 75%; animation-delay: 0.35s;">
+                        ICO boom → DeFi summer → yield farming → Terra collapse → RWA tokenization
+                    </div>
+                </div>
+            </div>
+            <div class="tl-row" style="--c: #ff6b9d">
+                <div class="tl-label">Market</div>
+                <div class="tl-track">
+                    <div class="tl-bar" style="left: 30%; width: 70%; animation-delay: 0.5s;">
+                        CEX (중앙화) → DEX (탈중앙) → AMM (자동시장조성) → MEV (순서추출) → order-flow auctions
+                    </div>
+                </div>
+            </div>
+            <div class="tl-row" style="--c: #7ee787">
+                <div class="tl-label">Regulation</div>
+                <div class="tl-track">
+                    <div class="tl-bar" style="left: 45%; width: 55%; animation-delay: 0.65s;">
+                        AML rules → ICO crackdown → ETF approval → CLARITY debate
+                    </div>
+                </div>
+            </div>
+            <div class="tl-row" style="--c: #c084fc">
+                <div class="tl-label">Geopolitics</div>
+                <div class="tl-track">
+                    <div class="tl-bar" style="left: 55%; width: 45%; animation-delay: 0.8s;">
+                        neutral asset → sanctions → trade settlement → whitelist systems
+                    </div>
+                </div>
+            </div>
+            <div class="tl-row" style="--c: #f87171">
+                <div class="tl-label">Quantum</div>
+                <div class="tl-track">
+                    <div class="tl-bar" style="left: 75%; width: 25%; animation-delay: 0.95s;">
+                        post-quantum migration begins
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 4: LOOP DIAGRAM -->
+<!-- ============================================================ -->
+<section class="slide" data-title="The Innovation Loop">
+    <div class="eyebrow">04 · The Innovation–Regulation Loop</div>
+    <h2 class="section">동적 <em>시스템</em> 구조</h2>
+    <div class="loop-layout">
+        <div class="loop-text stagger">
+            <p class="lede">
+                혁신은 <strong>독립적으로 일어나지 않는다</strong>.
+                자본은 수익을 좇아 흐르고, 위험은 그 수익을 따라온다.
+                규제는 위험을 따라오며, 제도화는 다음 혁신의 씨앗이 된다.
+            </p>
+            <div class="pulls">
+                <div><strong>01</strong> 기술이 가능성을 만든다</div>
+                <div><strong>02</strong> 자본이 그 가능성을 활용한다</div>
+                <div><strong>03</strong> 수익은 항상 위험을 동반한다</div>
+                <div><strong>04</strong> 규제는 사후적이며 점진적이다</div>
+                <div><strong>05</strong> 제도화는 다음 혁신의 토양이다</div>
+            </div>
+        </div>
+        <div class="loop-diagram">
+            <svg viewBox="0 0 400 400" style="width: 100%; height: 100%;">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#ffb454"/>
+                    </marker>
+                    <radialGradient id="centerGlow">
+                        <stop offset="0%" stop-color="#ffb454" stop-opacity="0.3"/>
+                        <stop offset="100%" stop-color="#ffb454" stop-opacity="0"/>
+                    </radialGradient>
+                </defs>
+                <circle cx="200" cy="200" r="80" fill="url(#centerGlow)"/>
+
+                <!-- 6 nodes around circle -->
+                <g class="loop-nodes">
+                    <!-- Top -->
+                    <g transform="translate(200, 50)">
+                        <circle r="32" fill="#0f1524" stroke="#ffb454" stroke-width="1.5"/>
+                        <text y="-2" text-anchor="middle" fill="#ffb454" font-family="JetBrains Mono" font-size="9">01</text>
+                        <text y="10" text-anchor="middle" fill="#e8eef7" font-family="Inter Tight" font-size="10">기술 혁신</text>
+                    </g>
+                    <!-- Top right -->
+                    <g transform="translate(330, 130)">
+                        <circle r="32" fill="#0f1524" stroke="#6dd3ff" stroke-width="1.5"/>
+                        <text y="-2" text-anchor="middle" fill="#6dd3ff" font-family="JetBrains Mono" font-size="9">02</text>
+                        <text y="10" text-anchor="middle" fill="#e8eef7" font-family="Inter Tight" font-size="10">금융 활동</text>
+                    </g>
+                    <!-- Bottom right -->
+                    <g transform="translate(330, 270)">
+                        <circle r="32" fill="#0f1524" stroke="#ff6b9d" stroke-width="1.5"/>
+                        <text y="-2" text-anchor="middle" fill="#ff6b9d" font-family="JetBrains Mono" font-size="9">03</text>
+                        <text y="10" text-anchor="middle" fill="#e8eef7" font-family="Inter Tight" font-size="10">수익 기회</text>
+                    </g>
+                    <!-- Bottom -->
+                    <g transform="translate(200, 350)">
+                        <circle r="32" fill="#0f1524" stroke="#f87171" stroke-width="1.5"/>
+                        <text y="-2" text-anchor="middle" fill="#f87171" font-family="JetBrains Mono" font-size="9">04</text>
+                        <text y="10" text-anchor="middle" fill="#e8eef7" font-family="Inter Tight" font-size="10">위험 발생</text>
+                    </g>
+                    <!-- Bottom left -->
+                    <g transform="translate(70, 270)">
+                        <circle r="32" fill="#0f1524" stroke="#7ee787" stroke-width="1.5"/>
+                        <text y="-2" text-anchor="middle" fill="#7ee787" font-family="JetBrains Mono" font-size="9">05</text>
+                        <text y="10" text-anchor="middle" fill="#e8eef7" font-family="Inter Tight" font-size="10">규제 개입</text>
+                    </g>
+                    <!-- Top left -->
+                    <g transform="translate(70, 130)">
+                        <circle r="32" fill="#0f1524" stroke="#c084fc" stroke-width="1.5"/>
+                        <text y="-2" text-anchor="middle" fill="#c084fc" font-family="JetBrains Mono" font-size="9">06</text>
+                        <text y="10" text-anchor="middle" fill="#e8eef7" font-family="Inter Tight" font-size="10">제도화</text>
+                    </g>
+                </g>
+
+                <!-- Animated flow arrows -->
+                <g fill="none" stroke="#ffb454" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="4 4" opacity="0.6">
+                    <path d="M 230 70 A 150 150 0 0 1 320 105"/>
+                    <path d="M 340 165 A 150 150 0 0 1 340 235"/>
+                    <path d="M 320 295 A 150 150 0 0 1 230 330"/>
+                    <path d="M 170 330 A 150 150 0 0 1 80 295"/>
+                    <path d="M 60 235 A 150 150 0 0 1 60 165"/>
+                    <path d="M 80 105 A 150 150 0 0 1 170 70"/>
+                </g>
+
+                <!-- Center label -->
+                <text x="200" y="195" text-anchor="middle" fill="#8a96ad" font-family="JetBrains Mono" font-size="9" letter-spacing="2">CONTINUOUS</text>
+                <text x="200" y="210" text-anchor="middle" fill="#ffb454" font-family="Fraunces" font-style="italic" font-size="18">loop</text>
+            </svg>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 5: CASE 1 — DeFi -->
+<!-- ============================================================ -->
+<section class="slide" data-title="Case 01 · Ethereum Cycle">
+    <div class="eyebrow">05 · Case Study One</div>
+    <h2 class="section">Ethereum <em>→</em> DeFi <em>→</em> 붕괴 <em>→</em> 재구성</h2>
+    <div class="case-grid">
+        <div class="case-flow stagger">
+            <div class="case-step" style="--c: #6dd3ff">
+                <span class="num">01</span>
+                <span class="text">Ethereum 스마트 계약의 등장</span>
+            </div>
+            <div class="case-step" style="--c: #6dd3ff">
+                <span class="num">02</span>
+                <span class="text">DeFi 대출 · 거래 · 자동시장조성</span>
+            </div>
+            <div class="case-step" style="--c: #ffb454">
+                <span class="num">03</span>
+                <span class="text">수익률 경쟁 — yield farming</span>
+            </div>
+            <div class="case-step" style="--c: #ffb454">
+                <span class="num">04</span>
+                <span class="text">레버리지 확대 · 알고리즘 스테이블코인</span>
+            </div>
+            <div class="case-step crisis">
+                <span class="num">05</span>
+                <span class="text">Terra / Luna 붕괴 — $40B 증발</span>
+            </div>
+            <div class="case-step" style="--c: #7ee787">
+                <span class="num">06</span>
+                <span class="text">규제 강화 · 리스크 관리 표준화</span>
+            </div>
+            <div class="case-step" style="--c: #7ee787">
+                <span class="num">07</span>
+                <span class="text">기관형 DeFi · RWA 토큰화</span>
+            </div>
+        </div>
+        <div class="case-aside">
+            <div class="pulled-quote">
+                "DeFi는 죽지 않았다.<br>
+                <em>제도권으로 이주</em>했을 뿐."
+            </div>
+            <div class="insight-label">// Insight</div>
+            <div class="insight">
+                혁신은 붕괴 후에 사라지지 않는다.
+                위험을 추출당한 채, 더 좁고 더 안전한 형태로
+                <strong style="color:var(--ink)">제도권에 흡수</strong>된다.
+                이것이 금융 시스템의 학습 메커니즘이다.
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 6: CASE 2 — Market Structure / MEV -->
+<!-- ============================================================ -->
+<section class="slide" data-title="Case 02 · Market Structure">
+    <div class="eyebrow">06 · Case Study Two</div>
+    <h2 class="section">시장 구조의 <em>재발명</em></h2>
+    <div class="case-grid">
+        <div class="case-flow stagger">
+            <div class="case-step" style="--c: #ff6b9d">
+                <span class="num">01</span>
+                <span class="text">CEX (중앙화 거래소) — 주문장 모델</span>
+            </div>
+            <div class="case-step" style="--c: #ff6b9d">
+                <span class="num">02</span>
+                <span class="text">DEX (탈중앙 거래소) — 신뢰 제거</span>
+            </div>
+            <div class="case-step" style="--c: #ff6b9d">
+                <span class="num">03</span>
+                <span class="text">AMM (자동시장조성자) — 유동성 풀 자동화</span>
+            </div>
+            <div class="case-step" style="--c: #ffb454">
+                <span class="num">04</span>
+                <span class="text">차익거래 봇의 폭발적 증가</span>
+            </div>
+            <div class="case-step crisis">
+                <span class="num">05</span>
+                <span class="text">MEV (최대추출가치) 등장 — 트랜잭션 순서 추출</span>
+            </div>
+            <div class="case-step" style="--c: #7ee787">
+                <span class="num">06</span>
+                <span class="text">Order-flow 옥션 · Flashbots</span>
+            </div>
+        </div>
+        <div class="case-aside">
+            <div class="pulled-quote">
+                거래 자체가 아니라<br>
+                <em>"순서"</em>가 가치가 되는 구조
+            </div>
+            <div class="insight-label">// Key Shift</div>
+            <div class="insight">
+                전통 금융에서 <strong style="color:var(--ink)">order ≠ price</strong>는
+                미시구조 문제였지만, 블록체인에서는
+                블록 빌더의 <strong style="color:var(--ink)">정렬 권한</strong> 자체가
+                새로운 시장이 되었다.
+                MEV는 버그가 아니라 비용이며, 이제 <strong style="color:var(--ink)">상품</strong>이다.
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 7: CASE 3 — Geopolitics -->
+<!-- ============================================================ -->
+<section class="slide" data-title="Case 03 · Settlement Geopolitics">
+    <div class="eyebrow">07 · Case Study Three</div>
+    <h2 class="section">지정학과 <em>결제 시스템</em></h2>
+    <div class="case-grid">
+        <div class="case-flow stagger">
+            <div class="case-step" style="--c: #c084fc">
+                <span class="num">01</span>
+                <span class="text">기존 시스템: SWIFT + 달러 중심</span>
+            </div>
+            <div class="case-step crisis">
+                <span class="num">02</span>
+                <span class="text">제재 발동 — 러시아 · 이란 · 북한</span>
+            </div>
+            <div class="case-step" style="--c: #c084fc">
+                <span class="num">03</span>
+                <span class="text">대체 결제 수단 수요 폭증</span>
+            </div>
+            <div class="case-step" style="--c: #c084fc">
+                <span class="num">04</span>
+                <span class="text">스테이블코인 · 비트코인 우회 결제</span>
+            </div>
+            <div class="case-step" style="--c: #c084fc">
+                <span class="num">05</span>
+                <span class="text">국가별 whitelist · 면허 시스템</span>
+            </div>
+            <div class="case-step" style="--c: #7ee787">
+                <span class="num">06</span>
+                <span class="text">CBDC · mBridge · Project Agorá</span>
+            </div>
+        </div>
+        <div class="case-aside">
+            <div class="pulled-quote">
+                블록체인은 금융 기술이 아니라<br>
+                <em>국제 결제 인프라</em> 경쟁의 일부
+            </div>
+            <div class="insight-label">// Geopolitical Frame</div>
+            <div class="insight">
+                암호화폐를 <strong style="color:var(--ink)">투기 자산</strong>으로만 보면
+                절반만 본 것이다. 실제로는 1944년 브레튼우즈 이후
+                처음으로 <strong style="color:var(--ink)">국제 결제 레이어</strong>가
+                재설계되고 있으며, 블록체인은 그 후보 중 하나다.
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 8: CASE 4 — Capital Flow -->
+<!-- ============================================================ -->
+<section class="slide" data-title="Case 04 · Capital Flow">
+    <div class="eyebrow">08 · Case Study Four</div>
+    <h2 class="section">자본은 <em>가장 높은 수익</em>을 따라간다</h2>
+    <div class="case-grid">
+        <div class="case-flow stagger">
+            <div class="case-step" style="--c: #ffb454">
+                <span class="num">01</span>
+                <span class="text">XRP 보유 — 원래 체인의 한계</span>
+            </div>
+            <div class="case-step" style="--c: #6dd3ff">
+                <span class="num">02</span>
+                <span class="text">Solana로 wrapping (wXRP)</span>
+            </div>
+            <div class="case-step" style="--c: #6dd3ff">
+                <span class="num">03</span>
+                <span class="text">DeFi 프로토콜 참여 가능</span>
+            </div>
+            <div class="case-step" style="--c: #6dd3ff">
+                <span class="num">04</span>
+                <span class="text">거래 · 대출 · 유동성 제공</span>
+            </div>
+            <div class="case-step" style="--c: #7ee787">
+                <span class="num">05</span>
+                <span class="text">수익 창출 · 자본 효율성 극대화</span>
+            </div>
+        </div>
+        <div class="case-aside">
+            <div class="pulled-quote">
+                자산은 가장 높은 수익이 가능한<br>
+                <em>체인으로 이동</em>한다
+            </div>
+            <div class="insight-label">// The Bridge Economy</div>
+            <div class="insight">
+                체인 간 자산 이동은 <strong style="color:var(--ink)">단순 환전</strong>이
+                아니다. 각 체인의 DeFi 생태계는 서로 다른
+                수익률 곡선을 가지며, 자본은
+                <strong style="color:var(--ink)">차익을 좇아 끊임없이 이주</strong>한다.
+                이것이 멀티체인 시대의 본질이다.
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 9: QUANTUM -->
+<!-- ============================================================ -->
+<section class="slide" data-title="Quantum Risk">
+    <div class="eyebrow">09 · Cryptographic Foundation</div>
+    <h2 class="section">기술 리스크: <em>Quantum</em></h2>
+    <div class="quantum-layout">
+        <div class="quantum-text stagger">
+            <p class="lede">
+                블록체인의 신뢰는 <strong>공개키 암호</strong>에 의존한다.
+                양자 컴퓨터는 이 가정을 장기적으로 흔들 수 있다.
+            </p>
+            <div class="quantum-points">
+                <div class="q-point">
+                    <span class="ix">→ 01</span>
+                    <div class="body">
+                        ECDSA · RSA의 안전성은 이산로그 · 소인수분해 난이도에 의존
+                        <span>Shor 알고리즘은 충분히 큰 양자 컴퓨터에서 이를 다항시간에 해결</span>
+                    </div>
+                </div>
+                <div class="q-point">
+                    <span class="ix">→ 02</span>
+                    <div class="body">
+                        "Harvest now, decrypt later" 위협이 이미 존재
+                        <span>지금 암호화된 트래픽을 저장해두고 미래에 해독</span>
+                    </div>
+                </div>
+                <div class="q-point">
+                    <span class="ix">→ 03</span>
+                    <div class="body">
+                        Post-quantum 암호 (PQC)로의 마이그레이션 필요
+                        <span>NIST 표준화 완료 · 격자 기반 · 해시 기반 서명</span>
+                    </div>
+                </div>
+                <div class="q-point">
+                    <span class="ix">→ 04</span>
+                    <div class="body">
+                        문제는 기술이 아니라 <strong style="color:var(--accent)">조정 비용</strong>
+                        <span>모든 체인 · 지갑 · 컨트랙트의 동시 업그레이드는 비현실적</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <svg viewBox="0 0 400 400" style="width: 100%; max-width: 400px;">
+            <defs>
+                <linearGradient id="qGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#f87171" stop-opacity="0.6"/>
+                    <stop offset="100%" stop-color="#c084fc" stop-opacity="0.2"/>
+                </linearGradient>
+                <radialGradient id="qPulse">
+                    <stop offset="0%" stop-color="#f87171" stop-opacity="0.3"/>
+                    <stop offset="100%" stop-color="#f87171" stop-opacity="0"/>
+                </radialGradient>
+            </defs>
+            <!-- Pulsing core -->
+            <circle cx="200" cy="200" r="80" fill="url(#qPulse)">
+                <animate attributeName="r" values="60;100;60" dur="4s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="0.5;0.1;0.5" dur="4s" repeatCount="indefinite"/>
+            </circle>
+            <!-- Lattice -->
+            <g stroke="#1f2940" stroke-width="0.5" fill="none">
+                <path d="M50,100 L350,100 M50,150 L350,150 M50,200 L350,200 M50,250 L350,250 M50,300 L350,300"/>
+                <path d="M100,50 L100,350 M150,50 L150,350 M200,50 L200,350 M250,50 L250,350 M300,50 L300,350"/>
+            </g>
+            <!-- Wave -->
+            <path d="M50,200 Q100,140 150,200 T250,200 T350,200" stroke="#f87171" stroke-width="2" fill="none" stroke-dasharray="6 3">
+                <animate attributeName="stroke-dashoffset" from="0" to="36" dur="1.5s" repeatCount="indefinite"/>
+            </path>
+            <path d="M50,200 Q100,260 150,200 T250,200 T350,200" stroke="#c084fc" stroke-width="2" fill="none" stroke-dasharray="6 3">
+                <animate attributeName="stroke-dashoffset" from="0" to="-36" dur="2s" repeatCount="indefinite"/>
+            </path>
+            <!-- Center label -->
+            <circle cx="200" cy="200" r="40" fill="#0f1524" stroke="url(#qGrad)" stroke-width="1.5"/>
+            <text x="200" y="196" text-anchor="middle" fill="#f87171" font-family="JetBrains Mono" font-size="10" letter-spacing="2">SHOR'S</text>
+            <text x="200" y="212" text-anchor="middle" fill="#e8eef7" font-family="Fraunces" font-style="italic" font-size="14">algorithm</text>
+            <!-- Corner markers -->
+            <text x="60" y="70" fill="#4a5568" font-family="JetBrains Mono" font-size="9">RSA</text>
+            <text x="320" y="70" fill="#4a5568" font-family="JetBrains Mono" font-size="9">ECDSA</text>
+            <text x="60" y="340" fill="#4a5568" font-family="JetBrains Mono" font-size="9">SHA-256</text>
+            <text x="305" y="340" fill="#7ee787" font-family="JetBrains Mono" font-size="9">PQC →</text>
+        </svg>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SLIDE 10: FINAL -->
+<!-- ============================================================ -->
+<section class="slide final" data-title="Synthesis">
+    <div class="stagger">
+        <div class="eyebrow">10 · Synthesis</div>
+        <h2 class="section">결국, <em>금융 시스템</em>의 재구성</h2>
+        <p class="lede">
+            블록체인을 가격이나 기술로만 보면 본질을 놓친다.
+            우리가 보고 있는 것은 <strong>금융 시스템 그 자체</strong>가
+            새로운 레이어 위에서 다시 쓰여지는 과정이다.
+        </p>
+        <div class="final-takeaways">
+            <div>
+                <span class="num">— 01 —</span>
+                <div class="head">단일 기술이 아니다</div>
+                <div class="desc">화폐, 금융, 시장, 규제, 지정학, 보안. 각자 다른 시계로 진화하는 독립 시스템들의 집합이다.</div>
+            </div>
+            <div>
+                <span class="num">— 02 —</span>
+                <div class="head">동시적 진화</div>
+                <div class="desc">트랙들은 평행하게 움직이지만 서로의 출력을 입력으로 소비하며 비선형 상호작용을 만든다.</div>
+            </div>
+            <div>
+                <span class="num">— 03 —</span>
+                <div class="head">반복되는 루프</div>
+                <div class="desc">수익이 위험을 부르고, 위험이 규제를 부르고, 규제가 제도화를 거쳐 다음 혁신의 토양이 된다.</div>
+            </div>
+            <div>
+                <span class="num">— 04 —</span>
+                <div class="head">진행 중인 재구성</div>
+                <div class="desc">결과가 정해진 게임이 아니라, 우리가 매일 그 진로를 함께 정하고 있는 살아있는 시스템이다.</div>
+            </div>
+        </div>
+        <div class="final-signature">
+            <span>// WWAI Research · Lecture Series</span>
+            <span class="end">— end of session —</span>
+        </div>
+    </div>
+</section>
+
+</div>
+
+<!-- Help overlay -->
+<div class="help-overlay" id="helpOverlay">
+    <div class="help-card">
+        <h3>Keyboard Navigation</h3>
+        <div class="key-row">
+            <div class="keys"><span class="key">→</span><span class="key">Space</span></div>
+            <div class="desc">Next slide</div>
+        </div>
+        <div class="key-row">
+            <div class="keys"><span class="key">←</span></div>
+            <div class="desc">Previous slide</div>
+        </div>
+        <div class="key-row">
+            <div class="keys"><span class="key">Home</span></div>
+            <div class="desc">First slide</div>
+        </div>
+        <div class="key-row">
+            <div class="keys"><span class="key">End</span></div>
+            <div class="desc">Last slide</div>
+        </div>
+        <div class="key-row">
+            <div class="keys"><span class="key">F</span></div>
+            <div class="desc">Fullscreen</div>
+        </div>
+        <div class="key-row">
+            <div class="keys"><span class="key">?</span><span class="key">Esc</span></div>
+            <div class="desc">Toggle this help</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+const dots = document.getElementById('dots');
+const progress = document.getElementById('progress');
+const sessionNum = document.getElementById('sessionNum');
+const slideTitle = document.getElementById('slideTitle');
+const helpOverlay = document.getElementById('helpOverlay');
+let current = 0;
+let isTransitioning = false;
+
+// Build dots
+for (let i = 0; i < total; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    dots.appendChild(dot);
+}
+
+function update() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    dots.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    progress.style.width = ((current + 1) / total * 100) + '%';
+    sessionNum.textContent = String(current + 1).padStart(2, '0');
+    slideTitle.textContent = slides[current].dataset.title || '';
+}
+
+function goTo(i) {
+    if (isTransitioning) return;
+    if (i < 0 || i >= total) return;
+    isTransitioning = true;
+    current = i;
+    update();
+    setTimeout(() => isTransitioning = false, 700);
+}
+
+function next() { goTo(current + 1); }
+function prev() { goTo(current - 1); }
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        next();
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prev();
+    } else if (e.key === 'Home') {
+        e.preventDefault();
+        goTo(0);
+    } else if (e.key === 'End') {
+        e.preventDefault();
+        goTo(total - 1);
+    } else if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    } else if (e.key === '?' || e.key === '/') {
+        helpOverlay.classList.toggle('show');
+    } else if (e.key === 'Escape') {
+        helpOverlay.classList.remove('show');
+    }
+});
+
+// Click on overlay to close
+helpOverlay.addEventListener('click', (e) => {
+    if (e.target === helpOverlay) helpOverlay.classList.remove('show');
+});
+
+// Touch gestures
+let touchStartX = 0;
+document.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+});
+document.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) > 50) {
+        if (dx < 0) next(); else prev();
+    }
+});
+
+// Wheel scroll (debounced)
+let wheelLock = false;
+document.addEventListener('wheel', (e) => {
+    if (wheelLock) return;
+    if (Math.abs(e.deltaY) < 30) return;
+    wheelLock = true;
+    if (e.deltaY > 0) next(); else prev();
+    setTimeout(() => wheelLock = false, 800);
+}, { passive: true });
+
+// Live clock
+function updateClock() {
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    document.getElementById('liveTime').textContent = `${h}:${m}:${s}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+update();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>화폐경제학 관점의 블록체인 강의노트</title>
+<style>
+:root{
+  --bg:#07111f; --bg2:#0b1628; --card:#12223a; --card2:#172d4d; --text:#f8fafc; --muted:#cbd5e1;
+  --dim:#91a4bf; --line:rgba(255,255,255,.15); --blue:#7dd3fc; --violet:#c4b5fd; --green:#86efac; --amber:#fcd34d; --red:#fda4af;
+  --shadow:0 24px 60px rgba(0,0,0,.35); --radius:24px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic","Segoe UI",sans-serif;}
+.deck{position:relative;width:100vw;height:100vh;background:
+  radial-gradient(900px 500px at 85% 12%, rgba(125,211,252,.18), transparent 58%),
+  radial-gradient(800px 560px at 10% 88%, rgba(196,181,253,.17), transparent 60%),
+  linear-gradient(135deg,#07111f 0%,#08162a 54%,#050914 100%);
+}
+.progress{position:absolute;top:0;left:0;height:5px;background:linear-gradient(90deg,var(--blue),var(--violet),var(--green));width:0%;z-index:30;transition:.25s}
+.slide{position:absolute;inset:0;padding:54px 72px 86px;display:none;overflow:hidden}
+.slide.active{display:flex;flex-direction:column;animation:fade .22s ease}
+@keyframes fade{from{opacity:.35;transform:translateY(7px)}to{opacity:1;transform:none}}
+h1{font-size:58px;line-height:1.08;margin:0 0 18px;letter-spacing:-.055em}
+h2{font-size:42px;line-height:1.14;margin:0 0 22px;letter-spacing:-.045em}
+h3{font-size:25px;margin:0 0 12px;letter-spacing:-.025em;color:#fff}
+p,li{font-size:21px;line-height:1.55;color:var(--muted)}
+ul{margin:10px 0 0;padding-left:24px}.small{font-size:15px;color:var(--dim);line-height:1.45}.tiny{font-size:12px;color:var(--dim)}
+.kicker{font-size:15px;color:var(--blue);font-weight:900;letter-spacing:.09em;text-transform:uppercase;margin-bottom:10px}.sub{font-size:25px;color:#dbeafe;max-width:1040px;line-height:1.45}.note{font-size:18px;color:#b7c6dd;line-height:1.5}
+.grid{display:grid;gap:20px;width:100%}.cols2{grid-template-columns:1fr 1fr}.cols3{grid-template-columns:repeat(3,1fr)}.cols4{grid-template-columns:repeat(4,1fr)}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.035));border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:0 18px 44px rgba(0,0,0,.21)}
+.card.compact{padding:18px}.card strong{color:#fff}.pill{display:inline-block;border:1px solid rgba(125,211,252,.35);background:rgba(125,211,252,.13);color:#dff7ff;border-radius:999px;padding:6px 11px;font-size:14px;font-weight:850;margin:0 5px 8px 0}.pill.green{border-color:rgba(134,239,172,.36);background:rgba(134,239,172,.11)}.pill.amber{border-color:rgba(252,211,77,.38);background:rgba(252,211,77,.13)}.pill.red{border-color:rgba(253,164,175,.36);background:rgba(253,164,175,.12)}
+.big{font-size:46px;font-weight:950;letter-spacing:-.06em;color:#fff}.quote{font-size:31px;line-height:1.35;font-weight:850;color:#fff;background:rgba(255,255,255,.06);border-left:5px solid var(--blue);border-radius:20px;padding:26px 30px;box-shadow:var(--shadow)}
+.split{height:100%;display:grid;grid-template-columns:1.05fr .95fr;gap:34px;align-items:center}.split.narrow{grid-template-columns:.9fr 1.1fr}.center{height:100%;display:flex;flex-direction:column;justify-content:center}.spacer{flex:1}.row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.arrow{font-size:29px;color:var(--blue);font-weight:900}.node{padding:15px 18px;border-radius:17px;background:rgba(125,211,252,.11);border:1px solid rgba(125,211,252,.34);font-weight:850;font-size:18px;color:#eefbff}.node.v{background:rgba(196,181,253,.12);border-color:rgba(196,181,253,.35)}.node.g{background:rgba(134,239,172,.11);border-color:rgba(134,239,172,.32)}.node.a{background:rgba(252,211,77,.12);border-color:rgba(252,211,77,.32)}
+.table{width:100%;border-collapse:collapse;font-size:18px;color:var(--muted);overflow:hidden;border-radius:18px}.table th,.table td{border-bottom:1px solid var(--line);padding:13px 14px;text-align:left;vertical-align:top}.table th{color:#fff;background:rgba(255,255,255,.08);font-weight:900}.table tr:last-child td{border-bottom:0}
+.eq{font-size:24px;color:#fff;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:18px;padding:18px 22px;line-height:1.5;font-weight:800}.formula{color:#fff;font-size:22px;font-weight:800;line-height:1.55}
+.footer{position:absolute;left:72px;right:72px;bottom:34px;display:flex;justify-content:space-between;align-items:center;color:var(--dim);font-size:13px}.source a{color:#b7e8ff;text-decoration:none}.source a:hover{text-decoration:underline}.page{font-variant-numeric:tabular-nums}.controls{position:absolute;right:22px;bottom:22px;display:flex;gap:8px;z-index:40}.btn{border:1px solid var(--line);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;padding:9px 13px;font-weight:850;cursor:pointer}.btn:hover{background:rgba(255,255,255,.14)}
+.menu{position:absolute;left:22px;bottom:22px;z-index:40}.overview{position:absolute;inset:0;background:rgba(4,8,16,.92);z-index:50;display:none;padding:38px;overflow:auto}.overview.open{display:block}.overview h2{margin-bottom:22px}.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}.thumb{border:1px solid var(--line);border-radius:18px;padding:14px;background:rgba(255,255,255,.07);cursor:pointer;min-height:110px}.thumb:hover{border-color:var(--blue);background:rgba(125,211,252,.11)}.thumb .n{font-size:13px;color:var(--blue);font-weight:900}.thumb .t{font-size:17px;color:#fff;font-weight:850;margin-top:7px}.thumb .d{font-size:13px;color:var(--dim);margin-top:5px;line-height:1.35}
+.reveal{cursor:pointer}.hiddenBox{display:none;margin-top:14px;padding:16px;border-radius:16px;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.23)}.hiddenBox.show{display:block}.kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid var(--line);border-radius:7px;padding:2px 6px;background:rgba(0,0,0,.25);font-size:13px;color:#fff}.bar{height:14px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:999px}.stack{display:flex;flex-direction:column;gap:14px}.mini{font-size:16px;line-height:1.45;color:var(--muted)}.warn{color:var(--amber)}.danger{color:var(--red)}.ok{color:var(--green)}
+/* High-contrast links for dark slides */
+a{color:#93c5fd;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;font-weight:750}
+a:visited{color:#c4b5fd}
+a:hover{color:#bfdbfe}
+.source a{color:#b7e8ff}
+.references .card{border-color:rgba(147,197,253,.32);background:linear-gradient(180deg,rgba(30,64,175,.22),rgba(255,255,255,.045))}
+.references .mini{color:#eef6ff;font-size:17px;line-height:1.55}
+.references h3{color:#fff}
+.references .ref-note{font-size:16px;color:#dbeafe;margin-top:10px}
+@media(max-width:900px){.slide{padding:36px 28px 78px}h1{font-size:40px}h2{font-size:32px}p,li{font-size:18px}.split,.split.narrow,.cols2,.cols3,.cols4{grid-template-columns:1fr}.footer{left:28px;right:28px}.controls{right:12px}.menu{left:12px}.slide{overflow:auto}}
+@media print{body{overflow:auto}.deck{height:auto}.slide{position:relative;display:block;page-break-after:always;height:100vh}.controls,.menu,.overview,.progress{display:none}.footer{position:absolute}}
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="progress" id="progress"></div>
+  <button class="btn menu" onclick="toggleOverview()">목차</button>
+  <div class="controls">
+    <button class="btn" onclick="prevSlide()">←</button>
+    <button class="btn" onclick="nextSlide()">→</button>
+  </div>
+  <div class="overview" id="overview"><h2>전체 슬라이드</h2><div class="thumbs" id="thumbs"></div></div>
+
+<section class="slide active" data-title="화폐경제학 관점의 블록체인" data-desc="강의 전체의 렌즈와 범위">
+  <div class="center">
+    <div class="kicker">Lecture Note</div>
+    <h1>화폐경제학 관점의<br>블록체인</h1>
+    <p class="sub">블록체인을 “기술 유행”이 아니라 <strong>화폐·원장·결제·인센티브·규제·지정학이 결합된 새로운 금융 인프라</strong>로 이해한다.</p>
+    <div class="row" style="margin-top:22px"><span class="pill">Money</span><span class="pill">Ledger</span><span class="pill">Consensus</span><span class="pill green">Gas & Fees</span><span class="pill amber">DeFi</span><span class="pill red">Regulation & Risk</span></div>
+  </div>
+  <div class="footer"><span>화폐경제학 기반 블록체인 강의노트</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="강의의 핵심 관점" data-desc="블록체인을 원장 경쟁으로 보기">
+  <h2>강의의 핵심 관점</h2>
+  <div class="quote">블록체인의 본질은 “코인 가격”이 아니라 <span class="ok">누가 원장을 기록하고, 왜 그 원장을 신뢰하며, 그 과정에서 누가 수익을 얻는가</span>이다.</div>
+  <div class="grid cols3" style="margin-top:28px">
+    <div class="card"><h3>화폐</h3><p>교환을 가능하게 하는 사회적 장치. 신뢰와 결제 가능성이 핵심이다.</p></div>
+    <div class="card"><h3>원장</h3><p>누가 얼마를 보유하고 누구에게 이전했는지 기록하는 장치. 금융 시스템의 심장부다.</p></div>
+    <div class="card"><h3>인센티브</h3><p>원장을 유지하는 비용을 누가 부담하고, 어떤 보상으로 질서를 유지하는지의 문제다.</p></div>
+  </div>
+  <div class="footer"><span>내용 중심 강의용 구성: 질문형 마무리 대신 개념·메커니즘·사례 중심</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="전체 구조" data-desc="기초에서 최근 사례까지">
+  <h2>전체 구조</h2>
+  <div class="grid cols4">
+    <div class="card"><span class="pill">I</span><h3>돈과 원장</h3><p>돈이 왜 필요한지, 은행과 중앙은행이 어떤 원장 역할을 하는지 정리한다.</p></div>
+    <div class="card"><span class="pill">II</span><h3>블록체인 구조</h3><p>분산원장, 암호학, 합의 알고리즘을 경제적 인센티브 관점에서 설명한다.</p></div>
+    <div class="card"><span class="pill green">III</span><h3>수익모델</h3><p>가스비, 블록공간, 검증자 보상, MEV, DeFi 수수료가 어떻게 발생하는지 본다.</p></div>
+    <div class="card"><span class="pill amber">IV</span><h3>최근 사례</h3><p>wXRP, 러시아 whitelist, Avalanche, CLARITY Act, 양자컴퓨팅 리스크를 연결한다.</p></div>
+  </div>
+  <div class="footer"><span>Self-contained: 배경지식이 없어도 따라올 수 있도록 정의 → 메커니즘 → 사례 순서</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="돈은 왜 필요한가" data-desc="화폐의 기능과 마찰">
+  <div class="split">
+    <div>
+      <h2>돈은 왜 필요한가</h2>
+      <p>화폐는 단순한 종이가 아니라 <strong>교환의 마찰을 줄이는 제도</strong>다. 물물교환에서는 내가 원하는 물건을 가진 사람이 동시에 내가 가진 물건을 원해야 한다. 이것이 “욕구의 이중일치 문제”다.</p>
+      <div class="eq">화폐 = 교환 비용을 낮추는 공통 언어 + 신뢰 가능한 결제 약속</div>
+    </div>
+    <div class="stack">
+      <div class="card"><h3>교환매개</h3><p>상품과 서비스를 쉽게 사고팔게 한다.</p></div>
+      <div class="card"><h3>가치저장</h3><p>현재의 구매력을 미래로 이전한다.</p></div>
+      <div class="card"><h3>계산단위</h3><p>가격, 회계, 부채, 임금의 기준이 된다.</p></div>
+    </div>
+  </div>
+  <div class="footer"><span>핵심: 화폐는 기술이 아니라 신뢰와 조정의 제도</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="원장은 금융 시스템의 중심" data-desc="원장 없이 금융은 작동하지 않음">
+  <h2>원장은 금융 시스템의 중심</h2>
+  <p class="sub">원장은 “누가 무엇을 얼마나 가지고 있는지”를 기록한다. 예금, 카드결제, 증권거래, 송금은 모두 원장 업데이트다.</p>
+  <div class="row" style="margin:28px 0 22px">
+    <div class="node">계좌 잔액</div><div class="arrow">→</div><div class="node v">거래 승인</div><div class="arrow">→</div><div class="node g">원장 변경</div><div class="arrow">→</div><div class="node a">최종 결제</div>
+  </div>
+  <div class="grid cols2">
+    <div class="card"><h3>중앙화 원장</h3><p>은행, 카드사, 거래소, 중앙예탁기관처럼 특정 기관이 기록을 관리한다. 효율적이지만 기관 신뢰가 필요하다.</p></div>
+    <div class="card"><h3>분산 원장</h3><p>여러 참여자가 같은 기록을 검증하고 보관한다. 중앙기관 의존을 줄이지만 합의 비용이 발생한다.</p></div>
+  </div>
+  <div class="footer"><span>블록체인은 “새로운 돈”이기 전에 “새로운 원장 운영 방식”</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="은행은 원장 사업이다" data-desc="상업은행과 중앙은행의 역할">
+  <h2>은행은 원장 사업이다</h2>
+  <div class="grid cols3">
+    <div class="card"><h3>상업은행</h3><p>예금 원장을 관리하고 대출을 통해 신용을 창출한다. 예금자는 은행의 내부 원장을 믿고 거래한다.</p></div>
+    <div class="card"><h3>중앙은행</h3><p>은행 간 최종 결제 원장을 제공하고 지급준비금, 통화정책, 최종대부자 기능을 수행한다.</p></div>
+    <div class="card"><h3>결제망</h3><p>카드망, SWIFT, 청산소, 증권예탁기관은 거래 메시지와 결제 확정성을 조정한다.</p></div>
+  </div>
+  <div class="quote" style="margin-top:28px">전통 금융에서 신뢰는 주로 <span class="ok">기관·규제·법적 집행</span>이 만든다. 블록체인에서는 일부 신뢰가 <span class="warn">코드·암호학·경제적 보상</span>으로 이동한다.</div>
+  <div class="footer"><span>비교 기준: 블록체인을 이해하려면 먼저 은행 원장의 기능을 이해해야 함</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="전통 결제의 마찰" data-desc="왜 대안 원장에 대한 수요가 생기는가">
+  <h2>전통 결제의 마찰</h2>
+  <div class="grid cols2">
+    <div class="card"><h3>속도와 시간대</h3><p>국제송금은 중개은행, 영업일, 규제 확인 때문에 시간이 걸릴 수 있다.</p></div>
+    <div class="card"><h3>비용</h3><p>환전 스프레드, 송금 수수료, 중개기관 비용이 누적된다.</p></div>
+    <div class="card"><h3>검열 가능성</h3><p>제재, 자본통제, 은행 접근 제한은 결제망 접근을 제한한다.</p></div>
+    <div class="card"><h3>불투명성</h3><p>최종 결제가 언제 확정되는지, 어떤 중개자가 개입하는지 사용자가 알기 어렵다.</p></div>
+  </div>
+  <div class="eq" style="margin-top:24px">대안 원장에 대한 수요 = 빠른 결제 + 낮은 중개비용 + 더 넓은 접근성 + 제도적 제한 회피 욕구</div>
+  <div class="footer"><span>블록체인 수요는 기술 호기심뿐 아니라 기존 결제망의 마찰에서 출발</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="블록체인의 정의" data-desc="분산원장과 합의">
+  <h2>블록체인의 정의</h2>
+  <p class="sub">블록체인은 거래 기록을 블록 단위로 묶고, 이전 기록과 암호학적으로 연결해 여러 참여자가 검증·보관하는 분산원장이다.</p>
+  <div class="row" style="margin:30px 0">
+    <div class="node">거래</div><div class="arrow">→</div><div class="node v">블록</div><div class="arrow">→</div><div class="node g">체인</div><div class="arrow">→</div><div class="node a">합의된 원장</div>
+  </div>
+  <div class="grid cols3">
+    <div class="card"><h3>분산 저장</h3><p>원장 사본이 여러 노드에 존재한다.</p></div>
+    <div class="card"><h3>검증 규칙</h3><p>정해진 규칙에 맞는 거래만 인정된다.</p></div>
+    <div class="card"><h3>인센티브</h3><p>검증자는 보상을 받고 부정행위에는 비용이 따른다.</p></div>
+  </div>
+  <div class="footer"><span>정의의 핵심: 데이터 구조 + 네트워크 + 합의규칙 + 보상체계</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="해시와 전자서명" data-desc="암호학의 최소한의 직관">
+  <h2>해시와 전자서명</h2>
+  <div class="grid cols2">
+    <div class="card"><h3>해시 함수</h3><p>어떤 입력을 고정 길이의 지문처럼 바꾼다. 입력이 조금만 달라도 결과가 크게 달라지므로 기록 위조를 탐지하기 쉽다.</p><div class="eq">데이터 → 해시값<br><span class="small">원본이 바뀌면 해시값도 바뀜</span></div></div>
+    <div class="card"><h3>전자서명</h3><p>개인키로 서명하고 공개키로 검증한다. “이 거래를 보낸 사람이 해당 키의 소유자”임을 증명한다.</p><div class="eq">개인키: 서명 생성<br>공개키: 서명 검증</div></div>
+  </div>
+  <p class="note" style="margin-top:20px">블록체인은 “누가 신뢰할 만한가”를 묻기보다 “서명이 유효한가, 규칙에 맞는가”를 먼저 확인한다.</p>
+  <div class="footer"><span>암호학은 신뢰를 제거하는 것이 아니라 신뢰의 대상을 사람에서 수학적 검증으로 이동시킴</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="합의 알고리즘" data-desc="누가 다음 블록을 쓰는가">
+  <h2>합의 알고리즘: 누가 다음 블록을 쓰는가</h2>
+  <p class="sub">분산원장에서는 중앙 관리자가 없다. 따라서 네트워크는 “어떤 거래 묶음이 정식 기록인가”를 결정하는 절차가 필요하다.</p>
+  <div class="grid cols2" style="margin-top:22px">
+    <div class="card"><h3>Proof of Work</h3><p>계산 비용을 치른 참여자가 블록 생성권을 얻는다. 공격하려면 막대한 에너지와 하드웨어 비용이 필요하다.</p><span class="pill amber">비용 신호</span><span class="pill">비트코인</span></div>
+    <div class="card"><h3>Proof of Stake</h3><p>토큰을 예치한 검증자가 블록 생성·검증에 참여한다. 부정행위 시 예치금이 삭감될 수 있다.</p><span class="pill green">자본 담보</span><span class="pill">이더리움</span></div>
+  </div>
+  <div class="quote" style="margin-top:26px">합의는 기술이면서 동시에 <span class="ok">메커니즘 디자인</span>이다. 정직한 기록이 가장 이익이 되도록 보상과 처벌을 설계한다.</div>
+  <div class="footer"><span>합의 알고리즘 = 원장 기록권을 배분하고 부정행위를 비싸게 만드는 장치</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="블록체인의 통화정책" data-desc="규칙 기반 발행과 중앙은행 재량 비교">
+  <h2>블록체인의 통화정책</h2>
+  <div class="grid cols2">
+    <div class="card"><h3>전통 화폐</h3><p>중앙은행이 경기, 물가, 금융안정을 고려해 통화정책을 조정한다. 장점은 유연성, 단점은 재량에 따른 시간불일치 문제다.</p></div>
+    <div class="card"><h3>프로토콜 화폐</h3><p>발행량, 보상, 소각 규칙이 코드에 들어간다. 장점은 예측가능성, 단점은 충격 대응의 경직성이다.</p></div>
+  </div>
+  <table class="table" style="margin-top:24px">
+    <tr><th>비교축</th><th>중앙은행 화폐</th><th>블록체인 토큰</th></tr>
+    <tr><td>발행 주체</td><td>중앙은행·정부 제도</td><td>프로토콜 규칙</td></tr>
+    <tr><td>정책 변경</td><td>회의·법·제도</td><td>코드 변경·거버넌스·하드포크</td></tr>
+    <tr><td>신뢰 근거</td><td>국가 신용과 법적 강제력</td><td>암호학, 네트워크, 인센티브</td></tr>
+  </table>
+  <div class="footer"><span>화폐경제학 연결: 규칙 vs 재량, 신뢰, 시뇨리지, 인플레이션</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="블록체인은 어떻게 돈을 버는가" data-desc="수익모델의 전체 지도">
+  <h2>블록체인은 어떻게 돈을 버는가</h2>
+  <p class="sub">블록체인은 무료 공공재처럼 보이지만 실제로는 <strong>계산, 저장공간, 결제 확정성, 보안, 유동성</strong>에 가격을 매기는 경제 시스템이다.</p>
+  <div class="grid cols3" style="margin-top:20px">
+    <div class="card"><h3>사용자 수수료</h3><p>거래를 보내거나 스마트계약을 실행할 때 가스비·수수료를 낸다.</p></div>
+    <div class="card"><h3>검증자 보상</h3><p>블록 생성자와 검증자는 수수료, 신규 발행, 팁을 받을 수 있다.</p></div>
+    <div class="card"><h3>금융 활동 수익</h3><p>DEX, 대출, 스테이블코인, 브리지, 커스터디, MEV에서 수익이 생긴다.</p></div>
+  </div>
+  <div class="eq" style="margin-top:24px">블록체인 수익 = 블록공간 가격 + 보안 예산 + 금융중개 수수료 + 정보·순서 우위 수익</div>
+  <div class="footer"><span>전통 금융에서는 숨겨진 인프라 비용이 블록체인에서는 명시적 수수료로 드러남</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="블록공간 시장" data-desc="가스비는 scarce blockspace의 가격">
+  <h2>블록공간 시장</h2>
+  <div class="split">
+    <div>
+      <p>블록공간은 거래를 블록에 넣을 수 있는 제한된 용량이다. 수요가 몰리면 사용자는 더 높은 수수료를 제시하고, 검증자는 더 높은 보상을 주는 거래를 우선 포함한다.</p>
+      <div class="eq">가스비 = 제한된 블록공간을 쓰기 위해 지불하는 가격</div>
+    </div>
+    <div class="card">
+      <h3>수요가 증가하는 상황</h3>
+      <ul>
+        <li>토큰 발행, NFT 민팅, 에어드롭</li>
+        <li>DEX 거래와 차익거래</li>
+        <li>청산 이벤트와 시장 급변</li>
+        <li>봇 경쟁과 MEV 탐색</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer"><span>블록공간은 디지털 부동산처럼 희소한 결제·계산 공간</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="가스비의 경제학" data-desc="계산 비용, 혼잡 가격, 보안 예산">
+  <h2>가스비의 경제학</h2>
+  <div class="grid cols2">
+    <div class="card"><h3>가스비는 무엇을 가격화하나</h3><ul><li>거래 검증 비용</li><li>스마트계약 계산 비용</li><li>네트워크 혼잡 비용</li><li>상태 저장 비용</li></ul></div>
+    <div class="card"><h3>누가 받거나 소각하나</h3><ul><li>검증자: 블록 생성 보상, 팁</li><li>프로토콜: 일부 수수료 소각 가능</li><li>사용자: 빠른 확정을 위해 더 높은 가격 제시</li></ul></div>
+  </div>
+  <table class="table" style="margin-top:24px">
+    <tr><th>경제학 용어</th><th>블록체인 대응 개념</th></tr>
+    <tr><td>혼잡 가격</td><td>수요가 몰릴 때 상승하는 가스비</td></tr>
+    <tr><td>한계비용</td><td>거래 하나를 추가로 처리하는 계산·저장 비용</td></tr>
+    <tr><td>보안 예산</td><td>검증자에게 지급되어 네트워크 안전성을 유지하는 보상</td></tr>
+  </table>
+  <div class="footer"><span>가스비는 단순 비용이 아니라 블록체인 인프라의 가격 신호</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="검증자와 수익 분배" data-desc="원장 유지자의 보상 구조">
+  <h2>검증자와 수익 분배</h2>
+  <div class="row" style="margin:28px 0">
+    <div class="node">사용자</div><div class="arrow">가스비</div><div class="node v">검증자</div><div class="arrow">원장 유지</div><div class="node g">네트워크 보안</div>
+  </div>
+  <div class="grid cols3">
+    <div class="card"><h3>블록 보상</h3><p>신규 토큰 발행으로 검증자를 보상한다. 이는 토큰 보유자 전체가 부담하는 희석 비용이다.</p></div>
+    <div class="card"><h3>거래 수수료</h3><p>사용자가 네트워크 사용 대가로 지급한다. 사용량이 많을수록 수익이 증가한다.</p></div>
+    <div class="card"><h3>슬래싱</h3><p>PoS에서 부정행위를 하면 예치 토큰이 삭감될 수 있다. 보상만큼 처벌도 중요하다.</p></div>
+  </div>
+  <div class="footer"><span>원장 보안은 선의가 아니라 보상과 벌칙으로 유지됨</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="수수료 소각과 토큰 가치" data-desc="사용량이 토큰 공급에 연결되는 방식">
+  <h2>수수료 소각과 토큰 가치</h2>
+  <div class="split narrow">
+    <div class="card"><h3>기본 구조</h3><p>일부 네트워크는 거래 수수료의 일부를 검증자에게 지급하지 않고 소각한다. 소각은 유통 공급을 줄이는 효과가 있다.</p><div class="eq">사용량 ↑ → 수수료 ↑ → 소각 ↑ → 순공급 압력 ↓</div></div>
+    <div>
+      <p>이 구조는 토큰을 단순한 결제 수단이 아니라 <strong>네트워크 사용량과 연결된 자산</strong>으로 만든다. 다만 토큰 가격이 반드시 오른다는 뜻은 아니다. 가격은 수요, 발행량, 소각량, 위험 프리미엄, 규제, 거시 유동성의 영향을 함께 받는다.</p>
+      <div class="quote">중요한 점은 “사용량이 가치 포착 메커니즘과 어떻게 연결되는가”이다.</div>
+    </div>
+  </div>
+  <div class="footer"><span>토큰 가치 분석: 수익, 소각, 희석, 네트워크 수요를 함께 봐야 함</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="MEV" data-desc="거래 순서에서 생기는 수익">
+  <h2>MEV: 거래 순서의 경제학</h2>
+  <p class="sub">MEV(Maximal Extractable Value)는 블록 안에서 거래를 포함·제외·재정렬할 수 있는 능력에서 생기는 수익이다. 이는 블록체인의 시장미시구조 문제다.</p>
+  <div class="grid cols3">
+    <div class="card"><h3>차익거래</h3><p>DEX 간 가격 차이를 빠르게 조정하며 수익을 얻는다.</p></div>
+    <div class="card"><h3>청산</h3><p>담보 부족 포지션을 먼저 청산해 보상을 얻는다.</p></div>
+    <div class="card"><h3>선행매매 위험</h3><p>공개된 거래 대기열을 보고 유리한 순서로 거래를 배치할 수 있다.</p></div>
+  </div>
+  <div class="eq" style="margin-top:24px">MEV = 정보 우위 + 속도 우위 + 거래 순서 결정권</div>
+  <div class="footer"><span>전통 금융의 고빈도거래·주문흐름 수익과 비교 가능</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="DeFi 수익모델" data-desc="코드 기반 금융중개">
+  <h2>DeFi 수익모델</h2>
+  <table class="table">
+    <tr><th>영역</th><th>작동 방식</th><th>수익 원천</th><th>핵심 위험</th></tr>
+    <tr><td>DEX/AMM</td><td>유동성 풀로 토큰 교환</td><td>스왑 수수료, LP 보상</td><td>비영구 손실, 스마트계약 오류</td></tr>
+    <tr><td>대출</td><td>담보 예치 후 차입</td><td>이자, 청산 수수료</td><td>담보 급락, 오라클 오류</td></tr>
+    <tr><td>스테이블코인</td><td>달러 등 기준자산에 연동</td><td>준비자산 이자, 발행·상환 수수료</td><td>런, 준비자산 불투명성</td></tr>
+    <tr><td>브리지/랩핑</td><td>다른 체인의 자산을 이동 가능하게 표현</td><td>발행·상환, 유동성, 커스터디 수익</td><td>브리지 해킹, 커스터디 리스크</td></tr>
+  </table>
+  <div class="footer"><span>DeFi는 은행·거래소·청산소 기능을 코드와 담보로 재구성한 금융중개</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="토큰은 무엇인가" data-desc="화폐, 지분, 상품의 혼합물">
+  <h2>토큰은 무엇인가</h2>
+  <p class="sub">토큰은 한 가지 자산군으로 단순화하기 어렵다. 화폐처럼 쓰이기도 하고, 네트워크 이용권이기도 하며, 거버넌스 권리 또는 수수료 수익 기대와 연결되기도 한다.</p>
+  <div class="grid cols4">
+    <div class="card compact"><h3>결제성</h3><p class="mini">거래 수단 또는 수수료 지불 수단</p></div>
+    <div class="card compact"><h3>네트워크 접근권</h3><p class="mini">프로토콜 사용에 필요한 자산</p></div>
+    <div class="card compact"><h3>거버넌스</h3><p class="mini">업그레이드·수수료 정책에 대한 투표권</p></div>
+    <div class="card compact"><h3>가치 포착</h3><p class="mini">수수료, 소각, 스테이킹 수익과 연결</p></div>
+  </div>
+  <div class="quote" style="margin-top:26px">토큰 = 화폐 + 네트워크 이용권 + 거버넌스 + 위험자산의 성격이 섞인 하이브리드 자산</div>
+  <div class="footer"><span>분석 시 “이 토큰은 무엇에 대한 청구권인가?”를 먼저 확인</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="사례: wXRP on Solana" data-desc="수익 동기가 만드는 크로스체인 이동">
+  <h2>사례: wXRP on Solana</h2>
+  <div class="split">
+    <div>
+      <p>2026년 4월, wXRP가 Solana에서 사용 가능해졌다는 보도가 나왔다. 구조는 XRP를 보관기관이 보유하고, Solana 생태계에서 사용할 수 있는 1:1 래핑 토큰을 발행하는 방식이다.</p>
+      <div class="eq">네이티브 XRP → 커스터디 보관 → wXRP 발행 → Solana DeFi 활용</div>
+      <p class="small">Hex Trust는 wXRP를 XRP로 완전 담보되고 규제 커스터디에 보관되는 래핑 토큰으로 설명한다.</p>
+    </div>
+    <div class="card">
+      <h3>왜 Solana로 가는가</h3>
+      <ul>
+        <li>더 넓은 DeFi 유동성 접근</li>
+        <li>DEX 거래와 유동성 공급 수수료</li>
+        <li>RLUSD 등 스테이블코인과의 거래쌍</li>
+        <li>빠른 거래 환경과 낮은 비용 기대</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer"><span class="source">자료: <a href="https://www.coindesk.com/markets/2026/04/18/wrapped-xrp-goes-live-on-solana-broadening-defi-access-for-ripple-linked-token" target="_blank">CoinDesk, 2026-04-18</a>; <a href="https://www.hextrust.com/services/wrapping/wxrp" target="_blank">Hex Trust wXRP 설명</a></span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="wXRP의 수익 흐름" data-desc="누가 왜 참여하는가">
+  <h2>wXRP의 수익 흐름</h2>
+  <div class="row" style="margin:24px 0 28px">
+    <div class="node">XRP 보유자</div><div class="arrow">랩핑</div><div class="node v">wXRP</div><div class="arrow">유동성</div><div class="node g">Solana DeFi</div><div class="arrow">수수료·수익</div><div class="node a">참여자 분배</div>
+  </div>
+  <table class="table">
+    <tr><th>참여자</th><th>수익 동기</th><th>위험</th></tr>
+    <tr><td>XRP 보유자</td><td>XRP 노출을 유지하며 DeFi 수익 기회 추구</td><td>래핑 토큰의 상환·커스터디 위험</td></tr>
+    <tr><td>Solana DEX/AMM</td><td>거래량 증가와 수수료 수익</td><td>유동성 급변, 가격 괴리</td></tr>
+    <tr><td>유동성 공급자</td><td>LP 수수료와 인센티브</td><td>비영구 손실, 스마트계약 위험</td></tr>
+    <tr><td>커스터디/브리지</td><td>보관, 발행·상환, 인프라 수익</td><td>운영·규제·보안 책임</td></tr>
+  </table>
+  <div class="footer"><span>핵심: 자산은 “수익이 더 잘 나는 원장”으로 이동하려는 경향이 있음</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="러시아 whitelist와 무역 결제" data-desc="제재 시대의 결제망 우회와 통제">
+  <h2>러시아 whitelist와 무역 결제</h2>
+  <p class="sub">러시아의 crypto whitelist 논의는 단순한 투자 규제가 아니라 <strong>제재 환경에서 어떤 디지털 자산과 중개자를 공식 무역 결제에 허용할 것인가</strong>의 문제다.</p>
+  <div class="grid cols2">
+    <div class="card"><h3>왜 whitelist인가</h3><ul><li>허용 자산·거래소를 중앙은행이 통제</li><li>자본유출, 사기, AML 위험 제한</li><li>제재 회피 의심을 관리하거나 최소화하려는 목적</li><li>국내 결제와 대외무역 결제를 분리</li></ul></div>
+    <div class="card"><h3>경제적 의미</h3><p>달러 중심 결제망 접근이 제한될 때 국가는 대체 원장을 찾는다. 이때 crypto는 “투자상품”이 아니라 <strong>지정학적 결제 인프라</strong>가 된다.</p><div class="eq">제재 → 결제마찰 ↑ → 대체 원장 수요 ↑</div></div>
+  </div>
+  <div class="footer"><span class="source">자료: <a href="https://cryptobriefing.com/russia-state-duma-advances-bill-crypto-regulation-ban-p2p/" target="_blank">Crypto Briefing, 2026-04</a>; <a href="https://finance.yahoo.com/markets/crypto/articles/russia-greenlights-crypto-global-trade-135058075.html" target="_blank">Yahoo/BeInCrypto, 2026-04</a>; <a href="https://www.reuters.com/technology/russian-central-bank-proposes-wealthy-individuals-be-allowed-invest-crypto-2025-03-12/" target="_blank">Reuters, 2025-03-12</a></span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="Avalanche가 인기 있는 이유" data-desc="맞춤형 체인과 기관용 토큰화">
+  <h2>Avalanche가 인기 있는 이유</h2>
+  <div class="grid cols2">
+    <div class="card"><h3>기술·시장 포지션</h3><p>Avalanche는 빠른 처리, 낮은 비용, EVM 호환성, 맞춤형 네트워크 구성을 강조한다. 특히 특정 기관이나 애플리케이션에 맞춘 전용 체인을 만들 수 있다는 점이 차별화 포인트다.</p></div>
+    <div class="card"><h3>화폐경제학적 해석</h3><p>기관은 완전히 개방된 퍼블릭 체인보다 규칙, 검증자, 자산 범위, 컴플라이언스를 조정할 수 있는 원장을 선호할 수 있다.</p></div>
+  </div>
+  <table class="table" style="margin-top:24px">
+    <tr><th>매력</th><th>금융적 의미</th></tr>
+    <tr><td>Custom chain / subnet 구조</td><td>특정 자산, 규제, 기관 워크플로에 맞춘 원장 설계</td></tr>
+    <tr><td>RWA·토큰화 내러티브</td><td>부동산, 채권, 펀드 등 전통자산의 온체인 이전 가능성</td></tr>
+    <tr><td>수수료·속도 경쟁</td><td>결제·거래 인프라로서 비용 우위 추구</td></tr>
+  </table>
+  <div class="footer"><span class="source">자료: <a href="https://www.avax.network/about/blog/tokenization-101-the-institutional-tipping-point-for-tokenization" target="_blank">Avalanche, Tokenization 101</a>; <a href="https://www.binance.com/en/square/post/308889118799921" target="_blank">Binance Square, 2026-04</a></span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="CLARITY Act 논의" data-desc="시장구조 규제와 SEC/CFTC 경계">
+  <h2>CLARITY Act 논의: 2026년 4월 기준</h2>
+  <p class="sub">미국 CLARITY Act는 디지털 자산 시장구조를 정리하려는 법안이다. 핵심은 “어떤 토큰이 증권인가, 상품인가, 누가 감독하는가, DeFi와 스테이블코인 수익은 어떻게 다룰 것인가”이다.</p>
+  <div class="grid cols2">
+    <div class="card"><h3>진행상황</h3><p>하원은 2025년 7월 CLARITY Act를 통과시켰고, 2026년 4월 현재 상원 논의가 이어지고 있다. 최근 보도는 일정 지연, 위원회 논의, 업계 압박을 함께 언급한다.</p></div>
+    <div class="card"><h3>쟁점</h3><ul><li>SEC와 CFTC의 관할 분리</li><li>DeFi 개발자와 프로토콜 책임 범위</li><li>스테이블코인 보상·수익이 은행 예금과 경쟁하는 문제</li><li>시장구조 투명성과 투자자 보호</li></ul></div>
+  </div>
+  <div class="eq" style="margin-top:22px">규제의 본질 = 새로운 원장이 기존 은행·증권·상품 규제 질서 안에 어떻게 들어갈 것인가</div>
+  <div class="footer"><span class="source">자료: <a href="https://financialservices.house.gov/news/documentsingle.aspx?DocumentID=410815" target="_blank">House Financial Services Committee, 2025-07-17</a>; <a href="https://www.galaxy.com/insights/research/clarity-act-update-final-push" target="_blank">Galaxy Research, 2026-04</a>; <a href="https://www.reuters.com/legal/government/bessent-urges-congress-pass-crypto-regulation-bill-2026-04-09/" target="_blank">Reuters, 2026-04-09</a></span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="양자컴퓨팅과 블록체인" data-desc="현재 위험과 장기 이행 문제">
+  <h2>양자컴퓨팅은 블록체인을 위협하는가</h2>
+  <div class="grid cols2">
+    <div class="card"><h3>현재 상태</h3><p>현재의 블록체인이 즉시 무너졌다는 의미는 아니다. 하지만 충분히 강력한 양자컴퓨터는 현재 널리 쓰이는 공개키 암호, 특히 ECC/RSA 계열에 장기 위협이 될 수 있다.</p></div>
+    <div class="card"><h3>블록체인에 중요한 이유</h3><p>지갑 주소, 전자서명, 검증자 키, 브리지 운영키가 공개키 암호에 의존한다. 신뢰 기반이 흔들리면 원장 자체보다 “소유권 증명”이 위험해진다.</p></div>
+  </div>
+  <table class="table" style="margin-top:24px">
+    <tr><th>위험 영역</th><th>영향</th><th>대응</th></tr>
+    <tr><td>공개키 노출 지갑</td><td>미래에 개인키 추정 위험</td><td>주소 재사용 축소, 키 이전</td></tr>
+    <tr><td>검증자 서명</td><td>합의 참여자의 신원·서명 신뢰 약화</td><td>양자내성 서명 도입</td></tr>
+    <tr><td>장기 보관 자산</td><td>보안 가정 변화로 리스크 프리미엄 증가</td><td>PQC 전환 로드맵</td></tr>
+  </table>
+  <div class="footer"><span class="source">자료: <a href="https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards" target="_blank">NIST, 2024-08-13</a>; <a href="https://www.nist.gov/pqc" target="_blank">NIST PQC</a></span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="스테이블코인" data-desc="은행예금과 그림자은행의 경계">
+  <h2>스테이블코인: 온체인 달러의 경제학</h2>
+  <p class="sub">스테이블코인은 달러 등 기준자산에 연동된 토큰이다. DeFi에서 결제단위, 담보, 거래쌍 역할을 한다.</p>
+  <div class="grid cols3">
+    <div class="card"><h3>왜 필요한가</h3><p>암호자산 가격 변동성을 피하면서 온체인 거래를 계속할 수 있다.</p></div>
+    <div class="card"><h3>수익은 어디서 생기나</h3><p>준비자산을 국채·현금성 자산으로 운용하면 이자수익이 발생한다.</p></div>
+    <div class="card"><h3>왜 위험한가</h3><p>준비자산 신뢰가 흔들리면 은행런과 유사한 상환 압력이 발생한다.</p></div>
+  </div>
+  <div class="quote" style="margin-top:26px">스테이블코인은 “예금과 비슷하지만 은행이 아닌 구조”이기 때문에 규제 논쟁의 중심에 선다.</div>
+  <div class="footer"><span>은행예금, MMF, 그림자은행, 지급결제 규제와 연결</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="랩핑과 브리지의 위험" data-desc="자산 이동은 수익과 위험을 함께 이동시킴">
+  <h2>랩핑과 브리지의 위험</h2>
+  <div class="split">
+    <div>
+      <p>랩핑은 다른 체인의 자산을 새로운 체인에서 쓸 수 있게 만드는 방식이다. 하지만 원자산이 실제로 안전하게 보관되고, 언제든 상환 가능하며, 브리지 메시지가 정확히 전달된다는 신뢰가 필요하다.</p>
+      <div class="eq">랩핑 자산의 가치 = 원자산 가치 × 상환 신뢰 × 브리지 신뢰 × 유동성</div>
+    </div>
+    <div class="stack">
+      <div class="card"><h3>커스터디 리스크</h3><p>원자산을 보관하는 기관이 실패하거나 동결될 수 있다.</p></div>
+      <div class="card"><h3>스마트계약 리스크</h3><p>브리지 코드 취약점은 대규모 손실로 이어질 수 있다.</p></div>
+      <div class="card"><h3>가격 괴리</h3><p>상환 신뢰가 흔들리면 wrapped token은 원자산과 1:1 가격을 잃을 수 있다.</p></div>
+    </div>
+  </div>
+  <div class="footer"><span>wXRP 사례와 연결: 수익기회는 항상 상환·보관·브리지 위험을 동반</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="블록체인 사회의 경쟁 축" data-desc="체인들은 무엇을 두고 경쟁하는가">
+  <h2>블록체인 사회의 경쟁 축</h2>
+  <div class="grid cols2">
+    <div class="card"><h3>유동성 경쟁</h3><p>자산과 거래량이 모이는 체인이 더 많은 수수료, 개발자, 금융상품을 끌어들인다.</p></div>
+    <div class="card"><h3>보안 경쟁</h3><p>검증자 수, 스테이킹 규모, 코드 안정성, 브리지 안전성이 신뢰를 만든다.</p></div>
+    <div class="card"><h3>규제 적합성 경쟁</h3><p>기관 참여를 위해 커스터디, KYC, 자산분류, 법적 책임 구조가 중요해진다.</p></div>
+    <div class="card"><h3>사용자 경험 경쟁</h3><p>지갑, 수수료 예측, 속도, 온램프, 앱 생태계가 대중화를 좌우한다.</p></div>
+  </div>
+  <div class="footer"><span>체인은 코인끼리 경쟁하는 것이 아니라 원장·유동성·규칙·사용성의 번들로 경쟁</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="종합 프레임워크" data-desc="분석을 위한 네 가지 질문 대신 네 가지 축">
+  <h2>종합 프레임워크</h2>
+  <p class="sub">어떤 블록체인 프로젝트나 정책을 보더라도 다음 네 가지 축으로 분석하면 화폐경제학적 구조가 보인다.</p>
+  <div class="grid cols4">
+    <div class="card"><div class="big">1</div><h3>원장</h3><p>누가 기록하고 누가 검증하는가.</p></div>
+    <div class="card"><div class="big">2</div><h3>화폐</h3><p>무엇이 결제단위·담보·가치저장 역할을 하는가.</p></div>
+    <div class="card"><div class="big">3</div><h3>수익</h3><p>가스비, 수수료, 소각, MEV, 이자수익은 누구에게 흐르는가.</p></div>
+    <div class="card"><div class="big">4</div><h3>위험</h3><p>가격, 규제, 보안, 유동성, 커스터디 위험은 어디에 있는가.</p></div>
+  </div>
+  <div class="footer"><span>이 프레임워크로 Bitcoin, Ethereum, Solana, Avalanche, wXRP, CBDC, stablecoin을 모두 비교 가능</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="핵심 용어 정리" data-desc="강의 중 반복되는 개념">
+  <h2>핵심 용어 정리</h2>
+  <div class="grid cols3">
+    <div class="card compact"><h3>Ledger</h3><p class="mini">소유권과 거래를 기록하는 장부.</p></div>
+    <div class="card compact"><h3>Consensus</h3><p class="mini">분산 참여자가 같은 원장 상태에 동의하는 절차.</p></div>
+    <div class="card compact"><h3>Gas</h3><p class="mini">계산과 블록공간 사용 대가로 내는 수수료 단위.</p></div>
+    <div class="card compact"><h3>Validator</h3><p class="mini">거래와 블록을 검증하고 보상을 받는 참여자.</p></div>
+    <div class="card compact"><h3>MEV</h3><p class="mini">거래 순서·포함·제외 결정에서 생기는 추출 가능 가치.</p></div>
+    <div class="card compact"><h3>Wrapped Token</h3><p class="mini">원자산을 담보로 다른 체인에서 표현한 토큰.</p></div>
+    <div class="card compact"><h3>Stablecoin</h3><p class="mini">달러 등 기준자산 가격에 연동되도록 설계된 토큰.</p></div>
+    <div class="card compact"><h3>RWA</h3><p class="mini">채권·부동산·펀드 등 현실 자산의 토큰화.</p></div>
+    <div class="card compact"><h3>PQC</h3><p class="mini">양자컴퓨팅 공격에 견디도록 설계된 암호기술.</p></div>
+  </div>
+  <div class="footer"><span>용어는 기술 암기가 아니라 경제적 기능으로 이해</span><span class="page"></span></div>
+</section>
+
+<section class="slide" data-title="마무리" data-desc="한 문장 요약">
+  <div class="center">
+    <div class="kicker">Synthesis</div>
+    <h1>블록체인은<br>원장을 둘러싼 경쟁이다</h1>
+    <p class="sub">누가 원장을 운영하는가, 어떤 자산이 그 위에서 돈처럼 쓰이는가, 수수료와 렌트는 누구에게 흐르는가, 그리고 법·보안·지정학이 어떤 제약을 거는가가 핵심이다.</p>
+    <div class="quote" style="margin-top:28px">화폐경제학 관점에서 블록체인은 “새 코인”이 아니라 <span class="ok">새 결제·청산·금융중개 인프라</span>이다.</div>
+  </div>
+  <div class="footer"><span>강의 종료</span><span class="page"></span></div>
+</section>
+
+<section class="slide references" data-title="자료 출처" data-desc="최근 사례와 법·기술 논의 확인용">
+  <h2>자료 출처</h2>
+  <div class="grid cols2">
+    <div class="card"><h3>wXRP / Solana</h3><p class="mini"><a href="https://www.coindesk.com/markets/2026/04/18/wrapped-xrp-goes-live-on-solana-broadening-defi-access-for-ripple-linked-token" target="_blank">CoinDesk: Wrapped XRP goes live on Solana, 2026-04-18</a><br><a href="https://www.hextrust.com/services/wrapping/wxrp" target="_blank">Hex Trust: wXRP product description</a><br><a href="https://www.hextrust.com/resources-collection/hex-trust-to-issue-and-custody-wrapped-xrp-wxrp" target="_blank">Hex Trust: wXRP announcement, 2025-12-12</a></p></div>
+    <div class="card"><h3>Russia crypto whitelist / trade</h3><p class="mini"><a href="https://cryptobriefing.com/russia-state-duma-advances-bill-crypto-regulation-ban-p2p/" target="_blank">Crypto Briefing: Russia advances crypto bill, 2026-04</a><br><a href="https://finance.yahoo.com/markets/crypto/articles/russia-greenlights-crypto-global-trade-135058075.html" target="_blank">Yahoo/BeInCrypto: Russia greenlights crypto for global trade, 2026-04</a><br><a href="https://www.reuters.com/technology/russian-central-bank-proposes-wealthy-individuals-be-allowed-invest-crypto-2025-03-12/" target="_blank">Reuters: Russian central bank crypto proposal, 2025-03-12</a></p></div>
+    <div class="card"><h3>Avalanche</h3><p class="mini"><a href="https://www.avax.network/about/blog/tokenization-101-the-institutional-tipping-point-for-tokenization" target="_blank">Avalanche: Tokenization 101</a><br><a href="https://www.binance.com/en/square/post/308889118799921" target="_blank">Binance Square: Avalanche subnets and institutional deployment, 2026-04</a></p></div>
+    <div class="card"><h3>CLARITY Act / Quantum</h3><p class="mini"><a href="https://financialservices.house.gov/news/documentsingle.aspx?DocumentID=410815" target="_blank">House Financial Services Committee: CLARITY Act passed House, 2025-07-17</a><br><a href="https://www.galaxy.com/insights/research/clarity-act-update-final-push" target="_blank">Galaxy Research: CLARITY Act update, 2026-04</a><br><a href="https://www.reuters.com/legal/government/bessent-urges-congress-pass-crypto-regulation-bill-2026-04-09/" target="_blank">Reuters: Bessent urges passage, 2026-04-09</a><br><a href="https://www.nist.gov/news-events/news/2024/08/nist-releases-first-3-finalized-post-quantum-encryption-standards" target="_blank">NIST: first finalized PQC standards, 2024-08-13</a></p></div>
+  </div>
+  <div class="footer"><span>링크는 강의 준비 시점의 확인용 자료</span><span class="page"></span></div>
+</section>
+
+</div>
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+let idx=0;
+const progress=document.getElementById('progress');
+function render(){slides.forEach((s,i)=>s.classList.toggle('active',i===idx));progress.style.width=((idx+1)/slides.length*100)+'%';document.querySelectorAll('.page').forEach(p=>p.textContent=(idx+1)+' / '+slides.length);}
+function nextSlide(){idx=Math.min(idx+1,slides.length-1);render()}
+function prevSlide(){idx=Math.max(idx-1,0);render()}
+function go(i){idx=i;toggleOverview(false);render()}
+function toggleOverview(force){const o=document.getElementById('overview');if(force===false)o.classList.remove('open');else o.classList.toggle('open')}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown')nextSlide();if(e.key==='ArrowLeft'||e.key==='PageUp')prevSlide();if(e.key==='Home'){idx=0;render()}if(e.key==='End'){idx=slides.length-1;render()}if(e.key.toLowerCase()==='o')toggleOverview();if(e.key==='Escape')toggleOverview(false)});
+document.addEventListener('click',e=>{const r=e.target.closest('.reveal');if(r){const box=r.parentElement.querySelector('.hiddenBox');if(box)box.classList.toggle('show')}});
+const thumbs=document.getElementById('thumbs');slides.forEach((s,i)=>{const d=document.createElement('div');d.className='thumb';d.onclick=()=>go(i);d.innerHTML=`<div class="n">${String(i+1).padStart(2,'0')}</div><div class="t">${s.dataset.title||''}</div><div class="d">${s.dataset.desc||''}</div>`;thumbs.appendChild(d)});
+render();
+</script>
+</body>
+</html>
